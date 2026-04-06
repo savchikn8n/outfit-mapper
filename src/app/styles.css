@@ -287,6 +287,17 @@ input[type="color"] {
   margin-top: 1rem;
 }
 
+.button-segment {
+  margin-bottom: 1rem;
+}
+
+.panel-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #b7c4d8;
+  font-size: 0.82rem;
+}
+
 .coming-soon {
   margin-top: 1rem;
   padding: 0.9rem;

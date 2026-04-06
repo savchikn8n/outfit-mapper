@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import Konva from "konva";
+import { I18nProvider, useI18n } from "./i18n";
 import { Toolbar } from "../components/Toolbar";
 import { StatusBar } from "../components/StatusBar";
 import { AvatarPanel } from "../features/avatar/components/AvatarPanel";
@@ -19,7 +20,7 @@ import { ViewerPanel } from "../features/viewer3d/components/ViewerPanel";
 import { useProjectStore } from "../store/projectStore";
 import { readFileAsDataUrl } from "../utils/image";
 
-export const App = () => {
+const AppContent = () => {
   const {
     project,
     selectedLayerId,
@@ -34,6 +35,8 @@ export const App = () => {
     setLayerVisibility,
     toggleLayerLock,
     setMannequinPreset,
+    setAvatarGender,
+    setLanguage,
     setBackgroundColor,
     setShirtBaseColor,
     toggleWireframe,
@@ -42,6 +45,7 @@ export const App = () => {
     loadProject,
     setStatusMessage
   } = useProjectStore();
+  const { formatStatus, t } = useI18n();
 
   const stageRef = useRef<Konva.Stage | null>(null);
   const viewerCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -94,30 +98,30 @@ export const App = () => {
       exportStageAsPng("layout-export.png", stageRef.current) ||
       exportCanvasAsPng("layout-export.png", textureCanvas);
     if (exported) {
-      setStatusMessage("Layout exported");
+      setStatusMessage({ key: "layoutExported" });
     }
   };
 
   const exportViewer = () => {
     if (exportCanvasAsPng("viewer-export.png", viewerCanvasRef.current)) {
-      setStatusMessage("3D preview exported");
+      setStatusMessage({ key: "previewExported" });
     }
   };
 
   const exportProject = () => {
     downloadProjectJson(project);
-    setStatusMessage("Project JSON exported");
+    setStatusMessage({ key: "projectExported" });
   };
 
   const saveProject = () => {
     downloadProjectJson(project);
-    setStatusMessage("Project saved locally and exported");
+    setStatusMessage({ key: "projectSaved" });
   };
 
   const openProject = async () => {
     const nextProject = await openProjectFile();
     if (!nextProject) {
-      setStatusMessage("Project open cancelled or invalid");
+      setStatusMessage({ key: "projectOpenFailed" });
       return;
     }
     loadProject(nextProject);
@@ -139,7 +143,7 @@ export const App = () => {
   return (
     <div className="app-shell">
       <Toolbar
-        mannequinPreset={project.sceneSettings.mannequinPreset}
+        language={project.sceneSettings.language}
         backgroundColor={project.sceneSettings.backgroundColor}
         shirtBaseColor={project.sceneSettings.shirtBaseColor}
         wireframe={project.sceneSettings.wireframe}
@@ -155,13 +159,16 @@ export const App = () => {
         onBackgroundColor={setBackgroundColor}
         onShirtBaseColor={setShirtBaseColor}
         onToggleWireframe={toggleWireframe}
+        onLanguageChange={setLanguage}
       />
 
       <main className="workspace">
         <section className="viewer-column">
           <div className="section-title">
-            <h2>3D Preview</h2>
-            <span>Live texture revision {textureReadyRevision}</span>
+            <h2>{t("viewer.title")}</h2>
+            <span>
+              {t("viewer.liveTextureRevision")} {textureReadyRevision}
+            </span>
           </div>
           <ViewerPanel
             textureCanvas={textureCanvas}
@@ -170,19 +177,22 @@ export const App = () => {
             backgroundColor={project.sceneSettings.backgroundColor}
             wireframe={project.sceneSettings.wireframe}
             mannequinPreset={project.sceneSettings.mannequinPreset}
+            avatarGender={project.sceneSettings.avatarGender}
             cameraPreset={project.sceneSettings.cameraPreset}
             onViewportReady={onViewportReady}
           />
           <AvatarPanel
             selectedPreset={project.sceneSettings.mannequinPreset}
+            selectedGender={project.sceneSettings.avatarGender}
             onSelectPreset={setMannequinPreset}
+            onSelectGender={setAvatarGender}
           />
         </section>
 
         <section className="editor-column">
           <div className="section-title">
-            <h2>2D UV Layout</h2>
-            <span>Front, back, and sleeve regions</span>
+            <h2>{t("editor.title")}</h2>
+            <span>{t("editor.subtitle")}</span>
           </div>
           <div className="editor-grid">
             <div className="editor-grid__canvas">
@@ -217,7 +227,7 @@ export const App = () => {
       </main>
 
       <StatusBar
-        message={statusMessage}
+        message={formatStatus(statusMessage)}
         layerCount={project.artworkLayers.length}
         selectedLayerName={selectedLayer?.name ?? ""}
       />
@@ -232,5 +242,15 @@ export const App = () => {
         }}
       />
     </div>
+  );
+};
+
+export const App = () => {
+  const language = useProjectStore((state) => state.project.sceneSettings.language);
+
+  return (
+    <I18nProvider language={language}>
+      <AppContent />
+    </I18nProvider>
   );
 };

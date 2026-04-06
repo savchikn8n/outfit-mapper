@@ -1,7 +1,8 @@
-import { CameraPreset, MannequinPresetId } from "../types/app";
+import { CameraPreset, UiLanguage } from "../types/app";
+import { useI18n } from "../app/i18n";
 
 interface ToolbarProps {
-  mannequinPreset: MannequinPresetId;
+  language: UiLanguage;
   backgroundColor: string;
   shirtBaseColor: string;
   wireframe: boolean;
@@ -17,9 +18,11 @@ interface ToolbarProps {
   onBackgroundColor: (color: string) => void;
   onShirtBaseColor: (color: string) => void;
   onToggleWireframe: () => void;
+  onLanguageChange: (language: UiLanguage) => void;
 }
 
 export const Toolbar = ({
+  language,
   backgroundColor,
   shirtBaseColor,
   wireframe,
@@ -34,51 +37,55 @@ export const Toolbar = ({
   onCameraPreset,
   onBackgroundColor,
   onShirtBaseColor,
-  onToggleWireframe
-}: ToolbarProps) => (
-  <header className="toolbar">
+  onToggleWireframe,
+  onLanguageChange
+}: ToolbarProps) => {
+  const { t } = useI18n();
+
+  return (
+    <header className="toolbar">
     <div className="toolbar__group">
       <button type="button" onClick={onNewProject}>
-        New
+        {t("toolbar.new")}
       </button>
       <button type="button" onClick={onOpenProject}>
-        Open
+        {t("toolbar.open")}
       </button>
       <button type="button" onClick={onSaveProject}>
-        Save
+        {t("toolbar.save")}
       </button>
     </div>
 
     <div className="toolbar__group">
       <button type="button" onClick={onImportPng}>
-        Import PNG
+        {t("toolbar.importPng")}
       </button>
       <button type="button" onClick={onImportSvg}>
-        Import SVG
+        {t("toolbar.importSvg")}
       </button>
     </div>
 
     <div className="toolbar__group">
       <button type="button" onClick={() => onCameraPreset("front")}>
-        Front
+        {t("toolbar.front")}
       </button>
       <button type="button" onClick={() => onCameraPreset("back")}>
-        Back
+        {t("toolbar.back")}
       </button>
       <button type="button" onClick={() => onCameraPreset("left")}>
-        Left
+        {t("toolbar.left")}
       </button>
       <button type="button" onClick={() => onCameraPreset("right")}>
-        Right
+        {t("toolbar.right")}
       </button>
       <button type="button" onClick={() => onCameraPreset("perspective")}>
-        Perspective
+        {t("toolbar.perspective")}
       </button>
     </div>
 
     <div className="toolbar__group toolbar__group--controls">
       <label>
-        Viewport
+        {t("toolbar.viewport")}
         <input
           type="color"
           value={backgroundColor}
@@ -86,7 +93,7 @@ export const Toolbar = ({
         />
       </label>
       <label>
-        Shirt
+        {t("toolbar.shirt")}
         <input
           type="color"
           value={shirtBaseColor}
@@ -94,20 +101,28 @@ export const Toolbar = ({
         />
       </label>
       <button type="button" onClick={onToggleWireframe} className={wireframe ? "is-active" : ""}>
-        UV / Wireframe
+        {t("toolbar.wireframe")}
       </button>
+      <label>
+        {t("toolbar.language")}
+        <select value={language} onChange={(event) => onLanguageChange(event.target.value as UiLanguage)}>
+          <option value="ru">{t("language.russian")}</option>
+          <option value="en">{t("language.english")}</option>
+        </select>
+      </label>
     </div>
 
     <div className="toolbar__group">
       <button type="button" onClick={onExportViewer}>
-        Export 3D PNG
+        {t("toolbar.export3d")}
       </button>
       <button type="button" onClick={onExportLayout}>
-        Export Layout PNG
+        {t("toolbar.exportLayout")}
       </button>
       <button type="button" onClick={onExportProject}>
-        Export JSON
+        {t("toolbar.exportJson")}
       </button>
     </div>
-  </header>
-);
+    </header>
+  );
+};

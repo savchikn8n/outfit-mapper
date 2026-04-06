@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Konva from "konva";
 import { Group, Layer, Rect, Stage, Text, Transformer } from "react-konva";
 import { ArtworkLayer } from "../../../types/app";
+import { useI18n } from "../../../app/i18n";
 import { layoutRegions, LAYOUT_HEIGHT, LAYOUT_WIDTH } from "../layoutRegions";
 import { ArtworkNode } from "./ArtworkNode";
 
@@ -22,6 +23,7 @@ export const LayoutEditor = ({
   onChangeLayer,
   onStageReady
 }: LayoutEditorProps) => {
+  const { getRegionLabel } = useI18n();
   const [stageSize, setStageSize] = useState({ width: 980, height: 920 });
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage | null>(null);
@@ -113,7 +115,7 @@ export const LayoutEditor = ({
               <Text
                 x={region.x}
                 y={region.y - 28}
-                text={region.label}
+                text={getRegionLabel(region.id)}
                 fill="#c7d4e8"
                 fontSize={18}
                 fontStyle="bold"

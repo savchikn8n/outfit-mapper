@@ -6,7 +6,6 @@ export const LAYOUT_HEIGHT = 900;
 export const layoutRegions: RegionDefinition[] = [
   {
     id: "front",
-    label: "Front",
     x: 120,
     y: 80,
     width: 280,
@@ -15,7 +14,6 @@ export const layoutRegions: RegionDefinition[] = [
   },
   {
     id: "back",
-    label: "Back",
     x: 520,
     y: 80,
     width: 280,
@@ -24,7 +22,6 @@ export const layoutRegions: RegionDefinition[] = [
   },
   {
     id: "leftSleeve",
-    label: "Left Sleeve",
     x: 60,
     y: 560,
     width: 220,
@@ -33,7 +30,6 @@ export const layoutRegions: RegionDefinition[] = [
   },
   {
     id: "rightSleeve",
-    label: "Right Sleeve",
     x: 420,
     y: 560,
     width: 220,

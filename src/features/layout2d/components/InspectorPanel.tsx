@@ -1,5 +1,6 @@
 import { ChangeEvent } from "react";
 import { ArtworkLayer, TargetRegion } from "../../../types/app";
+import { useI18n } from "../../../app/i18n";
 
 interface InspectorPanelProps {
   layer: ArtworkLayer | null;
@@ -16,13 +17,15 @@ export const InspectorPanel = ({
   onDeleteLayer,
   onDuplicateLayer
 }: InspectorPanelProps) => {
+  const { getRegionLabel, t } = useI18n();
+
   if (!layer) {
     return (
       <div className="panel-card">
         <div className="panel-card__header">
-          <h3>Inspector</h3>
+          <h3>{t("inspector.title")}</h3>
         </div>
-        <p className="empty-state">Select an artwork layer to edit its transform and placement.</p>
+        <p className="empty-state">{t("inspector.empty")}</p>
       </div>
     );
   }
@@ -48,7 +51,7 @@ export const InspectorPanel = ({
   return (
     <div className="panel-card">
       <div className="panel-card__header">
-        <h3>Inspector</h3>
+        <h3>{t("inspector.title")}</h3>
         <span>{layer.name}</span>
       </div>
       <div className="inspector-grid">
@@ -61,19 +64,19 @@ export const InspectorPanel = ({
           <input type="number" value={Math.round(layer.y)} onChange={onFieldChange("y")} />
         </label>
         <label>
-          Width
+          {t("inspector.width")}
           <input type="number" value={Math.round(layer.width)} onChange={onFieldChange("width")} />
         </label>
         <label>
-          Height
+          {t("inspector.height")}
           <input type="number" value={Math.round(layer.height)} onChange={onFieldChange("height")} />
         </label>
         <label>
-          Rotation
+          {t("inspector.rotation")}
           <input type="number" value={Math.round(layer.rotation)} onChange={onFieldChange("rotation")} />
         </label>
         <label>
-          Opacity
+          {t("inspector.opacity")}
           <input
             type="number"
             min="0"
@@ -84,11 +87,11 @@ export const InspectorPanel = ({
           />
         </label>
         <label className="field-span">
-          Target region
+          {t("inspector.targetRegion")}
           <select value={layer.targetRegion} onChange={onFieldChange("targetRegion")}>
             {regions.map((region) => (
               <option key={region} value={region}>
-                {region}
+                {getRegionLabel(region)}
               </option>
             ))}
           </select>
@@ -96,10 +99,10 @@ export const InspectorPanel = ({
       </div>
       <div className="button-row">
         <button type="button" onClick={onDuplicateLayer}>
-          Duplicate
+          {t("inspector.duplicate")}
         </button>
         <button type="button" onClick={onDeleteLayer}>
-          Delete
+          {t("inspector.delete")}
         </button>
       </div>
     </div>

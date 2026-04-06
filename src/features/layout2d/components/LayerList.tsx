@@ -1,4 +1,5 @@
 import { ArtworkLayer } from "../../../types/app";
+import { useI18n } from "../../../app/i18n";
 
 interface LayerListProps {
   layers: ArtworkLayer[];
@@ -16,10 +17,13 @@ export const LayerList = ({
   onToggleVisibility,
   onToggleLock,
   onReorderLayer
-}: LayerListProps) => (
-  <div className="panel-card">
+}: LayerListProps) => {
+  const { getRegionLabel, t } = useI18n();
+
+  return (
+    <div className="panel-card">
     <div className="panel-card__header">
-      <h3>Layers</h3>
+      <h3>{t("layers.title")}</h3>
       <span>{layers.length}</span>
     </div>
     <div className="layer-list">
@@ -34,7 +38,7 @@ export const LayerList = ({
           >
             <div>
               <strong>{layer.name}</strong>
-              <span>{layer.targetRegion}</span>
+              <span>{getRegionLabel(layer.targetRegion)}</span>
             </div>
             <div className="layer-row__actions">
               <button
@@ -44,7 +48,7 @@ export const LayerList = ({
                   onToggleVisibility(layer.id, !layer.visible);
                 }}
               >
-                {layer.visible ? "Hide" : "Show"}
+                {layer.visible ? t("layer.hide") : t("layer.show")}
               </button>
               <button
                 type="button"
@@ -53,7 +57,7 @@ export const LayerList = ({
                   onToggleLock(layer.id);
                 }}
               >
-                {layer.locked ? "Unlock" : "Lock"}
+                {layer.locked ? t("layer.unlock") : t("layer.lock")}
               </button>
               <button
                 type="button"
@@ -62,7 +66,7 @@ export const LayerList = ({
                   onReorderLayer(layer.id, "up");
                 }}
               >
-                Up
+                {t("layer.up")}
               </button>
               <button
                 type="button"
@@ -71,11 +75,12 @@ export const LayerList = ({
                   onReorderLayer(layer.id, "down");
                 }}
               >
-                Down
+                {t("layer.down")}
               </button>
             </div>
           </button>
         ))}
     </div>
-  </div>
-);
+    </div>
+  );
+};

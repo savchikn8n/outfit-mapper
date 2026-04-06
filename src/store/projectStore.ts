@@ -1,13 +1,22 @@
 import { create } from "zustand";
-import { avatarPresets } from "../features/avatar/presets";
-import { ProjectData, ArtworkLayer, CameraPreset, MannequinPresetId, SceneSettings, TargetRegion } from "../types/app";
+import {
+  ProjectData,
+  ArtworkLayer,
+  AvatarGender,
+  CameraPreset,
+  MannequinPresetId,
+  SceneSettings,
+  StatusMessage,
+  TargetRegion,
+  UiLanguage
+} from "../types/app";
 import { createId } from "../utils/id";
 
 interface ProjectStore {
   project: ProjectData;
   selectedLayerId: string | null;
   textureRevision: number;
-  statusMessage: string;
+  statusMessage: StatusMessage;
   importArtwork: (params: { source: string; name: string; type: ArtworkLayer["type"] }) => void;
   selectLayer: (id: string | null) => void;
   updateLayer: (id: string, patch: Partial<ArtworkLayer>) => void;
@@ -17,19 +26,23 @@ interface ProjectStore {
   setLayerVisibility: (id: string, visible: boolean) => void;
   toggleLayerLock: (id: string) => void;
   setMannequinPreset: (preset: MannequinPresetId) => void;
+  setAvatarGender: (gender: AvatarGender) => void;
+  setLanguage: (language: UiLanguage) => void;
   setBackgroundColor: (color: string) => void;
   setShirtBaseColor: (color: string) => void;
   toggleWireframe: () => void;
   setCameraPreset: (preset: CameraPreset) => void;
   newProject: () => void;
   loadProject: (project: ProjectData) => void;
-  setStatusMessage: (message: string) => void;
+  setStatusMessage: (message: StatusMessage) => void;
 }
 
 const defaultSceneSettings: SceneSettings = {
   mannequinPreset: "regular",
+  avatarGender: "male",
+  language: "ru",
   backgroundColor: "#10141b",
-  shirtBaseColor: "#f4f7fb",
+  shirtBaseColor: "#111111",
   wireframe: false,
   cameraPreset: "perspective"
 };
@@ -64,7 +77,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   project: createProject(),
   selectedLayerId: null,
   textureRevision: 0,
-  statusMessage: "Ready",
+  statusMessage: { key: "ready" },
   importArtwork: ({ source, name, type }) => {
     const project = get().project;
     const layer: ArtworkLayer = {
@@ -88,7 +101,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       }),
       selectedLayerId: layer.id,
       textureRevision: get().textureRevision + 1,
-      statusMessage: `Imported ${name}`
+      statusMessage: { key: "imported", value: name }
     });
   },
   selectLayer: (id) => set({ selectedLayerId: id }),
@@ -132,7 +145,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       }),
       selectedLayerId: null,
       textureRevision: textureRevision + 1,
-      statusMessage: "Layer removed"
+      statusMessage: { key: "layerRemoved" }
     });
   },
   duplicateSelectedLayer: () => {
@@ -158,7 +171,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       }),
       selectedLayerId: duplicate.id,
       textureRevision: textureRevision + 1,
-      statusMessage: "Layer duplicated"
+      statusMessage: { key: "layerDuplicated" }
     });
   },
   reorderLayer: (id, direction) => {
@@ -196,7 +209,22 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         ...state.project,
         sceneSettings: { ...state.project.sceneSettings, mannequinPreset: preset }
       }),
-      statusMessage: `${avatarPresets.find((entry) => entry.id === preset)?.label ?? preset} preset`
+      statusMessage: { key: "presetChanged", value: preset }
+    })),
+  setAvatarGender: (gender) =>
+    set((state) => ({
+      project: touch({
+        ...state.project,
+        sceneSettings: { ...state.project.sceneSettings, avatarGender: gender }
+      }),
+      statusMessage: { key: "genderChanged", value: gender }
+    })),
+  setLanguage: (language) =>
+    set((state) => ({
+      project: touch({
+        ...state.project,
+        sceneSettings: { ...state.project.sceneSettings, language }
+      })
     })),
   setBackgroundColor: (color) =>
     set((state) => ({
@@ -235,17 +263,21 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       project: createProject(),
       selectedLayerId: null,
       textureRevision: get().textureRevision + 1,
-      statusMessage: "New project"
+      statusMessage: { key: "newProject" }
     }),
   loadProject: (project) =>
     set({
       project: {
         ...project,
+        sceneSettings: {
+          ...defaultSceneSettings,
+          ...project.sceneSettings
+        },
         artworkLayers: normalizeZ(project.artworkLayers)
       },
       selectedLayerId: project.artworkLayers[0]?.id ?? null,
       textureRevision: get().textureRevision + 1,
-      statusMessage: `Loaded ${project.name}`
+      statusMessage: { key: "projectLoaded", value: project.name }
     }),
   setStatusMessage: (message) => set({ statusMessage: message })
 }));

@@ -1,3 +1,5 @@
+import { useI18n } from "../app/i18n";
+
 interface StatusBarProps {
   message: string;
   layerCount: number;
@@ -8,10 +10,16 @@ export const StatusBar = ({
   message,
   layerCount,
   selectedLayerName
-}: StatusBarProps) => (
-  <footer className="status-bar">
-    <span>{message}</span>
-    <span>{layerCount} layer(s)</span>
-    <span>{selectedLayerName || "No layer selected"}</span>
-  </footer>
-);
+}: StatusBarProps) => {
+  const { t } = useI18n();
+
+  return (
+    <footer className="status-bar">
+      <span>{message}</span>
+      <span>
+        {layerCount} {t("status.layers")}
+      </span>
+      <span>{selectedLayerName || t("status.noLayerSelected")}</span>
+    </footer>
+  );
+};

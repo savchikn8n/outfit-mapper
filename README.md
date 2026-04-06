@@ -6,6 +6,8 @@ Production-oriented MVP scaffold built web-first on React, TypeScript, and Vite,
 
 - Split-screen desktop UI with a 3D preview on the left and a UV layout editor on the right
 - Real-time shirt texture generation from an offscreen canvas
+- Default 3D human preview with male/female switching and fit presets
+- Bilingual interface with Russian and English UI modes
 - Artwork import for PNG and SVG files
 - Layer editing: move, scale, rotate, duplicate, delete, lock, visibility, and ordering
 - Mannequin preset system with a future custom-avatar placeholder
