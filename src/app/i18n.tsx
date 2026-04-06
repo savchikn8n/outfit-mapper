@@ -32,6 +32,7 @@ type TranslationKey =
   | "viewer.placeholderNote"
   | "editor.title"
   | "editor.subtitle"
+  | "editor.allRegions"
   | "avatar.title"
   | "avatar.presets"
   | "avatar.gender"
@@ -107,9 +108,10 @@ const translations: Record<UiLanguage, Record<TranslationKey, string>> = {
     "viewer.title": "3D Preview",
     "viewer.liveTextureRevision": "Live texture revision",
     "viewer.placeholderNote":
-      "Default procedural human model is active. Replace it later with /public/models/mannequin.glb and a dedicated shirt mesh when final assets are ready.",
+      "GLB avatar preview is active. Artwork is remapped into rough shirt UV zones with a dark-fabric mask hack, so front/back work for MVP but are not yet print-accurate.",
     "editor.title": "2D UV Layout",
     "editor.subtitle": "Front, back, and sleeve regions",
+    "editor.allRegions": "All regions",
     "avatar.title": "Avatar",
     "avatar.presets": "Fit presets",
     "avatar.gender": "Gender",
@@ -184,9 +186,10 @@ const translations: Record<UiLanguage, Record<TranslationKey, string>> = {
     "viewer.title": "3D-превью",
     "viewer.liveTextureRevision": "Версия live-текстуры",
     "viewer.placeholderNote":
-      "Сейчас активна процедурная базовая модель человека. Позже ее можно заменить на /public/models/mannequin.glb и отдельную mesh-модель футболки.",
+      "Сейчас активен GLB-аватар. Дизайн грубо перекладывается в UV-зоны футболки через маску темной ткани, поэтому front/back уже работают для MVP, но еще не дают полиграфической точности.",
     "editor.title": "2D UV-макет",
     "editor.subtitle": "Перед, спина и зоны рукавов",
+    "editor.allRegions": "Все области",
     "avatar.title": "Аватар",
     "avatar.presets": "Посадка",
     "avatar.gender": "Пол",

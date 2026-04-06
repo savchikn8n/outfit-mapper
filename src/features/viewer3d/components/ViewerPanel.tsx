@@ -1,10 +1,15 @@
 import { Canvas } from "@react-three/fiber";
-import { AvatarGender, CameraPreset, MannequinPresetId } from "../../../types/app";
+import {
+  ArtworkLayer,
+  AvatarGender,
+  CameraPreset,
+  MannequinPresetId
+} from "../../../types/app";
 import { useI18n } from "../../../app/i18n";
 import { ViewerScene } from "./ViewerScene";
 
 interface ViewerPanelProps {
-  textureCanvas: HTMLCanvasElement;
+  artworkLayers: ArtworkLayer[];
   textureRevision: number;
   shirtBaseColor: string;
   backgroundColor: string;

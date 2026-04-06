@@ -1,12 +1,19 @@
 import { useEffect, useMemo, useRef } from "react";
-import { OrbitControls, Grid } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { avatarPresets } from "../../avatar/presets";
-import { AvatarGender, CameraPreset, MannequinPresetId } from "../../../types/app";
+import {
+  ArtworkLayer,
+  AvatarGender,
+  CameraPreset,
+  MannequinPresetId
+} from "../../../types/app";
+import { useModelTextureComposer } from "../hooks/useModelTextureComposer";
+import { MODEL_URL } from "../modelHackConfig";
 
 interface ViewerSceneProps {
-  textureCanvas: HTMLCanvasElement;
+  artworkLayers: ArtworkLayer[];
   textureRevision: number;
   shirtBaseColor: string;
   backgroundColor: string;
@@ -26,7 +33,7 @@ const cameraPositions: Record<CameraPreset, [number, number, number]> = {
 };
 
 export const ViewerScene = ({
-  textureCanvas,
+  artworkLayers,
   textureRevision,
   shirtBaseColor,
   backgroundColor,
@@ -37,42 +44,26 @@ export const ViewerScene = ({
   onViewportReady
 }: ViewerSceneProps) => {
   const orbitRef = useRef<any>(null);
-  const shirtMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
   const { camera, gl, scene } = useThree();
+  const gltf = useGLTF(MODEL_URL);
 
   const preset = useMemo(
     () => avatarPresets.find((entry) => entry.id === mannequinPreset) ?? avatarPresets[1],
     [mannequinPreset]
   );
 
-  const genderProfile = useMemo(
+  const silhouetteScale = useMemo(
     () =>
       avatarGender === "female"
-        ? {
-            shoulderWidth: 0.84,
-            torsoWidth: 0.7,
-            hipWidth: 0.8,
-            armOffset: 0.88,
-            armRotation: 0.26,
-            headScale: [0.96, 1, 0.96] as [number, number, number],
-            chestY: 1.52,
-            legOffset: 0.3
-          }
-        : {
-            shoulderWidth: 0.96,
-            torsoWidth: 0.8,
-            hipWidth: 0.72,
-            armOffset: 0.98,
-            armRotation: 0.34,
-            headScale: [1, 1, 1] as [number, number, number],
-            chestY: 1.56,
-            legOffset: 0.33
-          },
+        ? [0.94, 1, 0.96] as [number, number, number]
+        : [1, 1.02, 1] as [number, number, number],
     [avatarGender]
   );
 
-  const skinColor = avatarGender === "female" ? "#c7947d" : "#b9876f";
-  const shirtColor = shirtBaseColor;
+  const { textureCanvas, textureReadyRevision } = useModelTextureComposer(
+    artworkLayers,
+    textureRevision
+  );
 
   const canvasTexture = useMemo(() => {
     const texture = new THREE.CanvasTexture(textureCanvas);
@@ -81,6 +72,41 @@ export const ViewerScene = ({
     texture.needsUpdate = true;
     return texture;
   }, [textureCanvas]);
+
+  const modelScene = useMemo(() => {
+    const clone = gltf.scene.clone(true);
+    clone.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) {
+        return;
+      }
+
+      object.castShadow = true;
+      object.receiveShadow = true;
+      if (!object.geometry.getAttribute("normal")) {
+        object.geometry.computeVertexNormals();
+      }
+    });
+    return clone;
+  }, [gltf.scene]);
+
+  const modelPlacement = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(modelScene);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    const maxSize = Math.max(size.x, size.y, size.z) || 1;
+    const scale = 3.7 / maxSize;
+
+    return {
+      scale,
+      position: [-center.x * scale, -box.min.y * scale, -center.z * scale] as [
+        number,
+        number,
+        number
+      ]
+    };
+  }, [modelScene]);
 
   useEffect(() => {
     onViewportReady(gl.domElement);
@@ -92,13 +118,20 @@ export const ViewerScene = ({
 
   useEffect(() => {
     canvasTexture.needsUpdate = true;
-    if (shirtMaterialRef.current) {
-      shirtMaterialRef.current.map = canvasTexture;
-      shirtMaterialRef.current.color = new THREE.Color(shirtBaseColor);
-      shirtMaterialRef.current.wireframe = wireframe;
-      shirtMaterialRef.current.needsUpdate = true;
-    }
-  }, [canvasTexture, shirtBaseColor, textureRevision, wireframe]);
+    modelScene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) {
+        return;
+      }
+
+      object.material = new THREE.MeshStandardMaterial({
+        map: canvasTexture,
+        color: new THREE.Color("#ffffff"),
+        roughness: 0.96,
+        metalness: 0,
+        wireframe
+      });
+    });
+  }, [canvasTexture, modelScene, shirtBaseColor, textureReadyRevision, wireframe]);
 
   useEffect(() => {
     const position = cameraPositions[cameraPreset];
@@ -110,99 +143,25 @@ export const ViewerScene = ({
 
   return (
     <>
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[4, 6, 3]} intensity={1.3} />
-      <directionalLight position={[-3, 5, -4]} intensity={0.55} />
-      <group scale={preset.bodyScale}>
-        <mesh position={[0, 0.62, 0]} castShadow>
-          <capsuleGeometry args={[0.16, 1.58, 8, 16]} />
-          <meshStandardMaterial color="#242c38" roughness={0.95} />
-        </mesh>
-        <mesh position={[-genderProfile.legOffset, 0.62, 0]} castShadow>
-          <capsuleGeometry args={[0.16, 1.58, 8, 16]} />
-          <meshStandardMaterial color="#242c38" roughness={0.95} />
-        </mesh>
-        <mesh position={[genderProfile.legOffset, 0.62, 0]} castShadow>
-          <capsuleGeometry args={[0.16, 1.58, 8, 16]} />
-          <meshStandardMaterial color="#242c38" roughness={0.95} />
-        </mesh>
-        <mesh position={[0, genderProfile.chestY, 0]} castShadow receiveShadow>
-          <capsuleGeometry args={[genderProfile.torsoWidth, 1.55, 12, 22]} />
-          <meshStandardMaterial color="#8f98aa" roughness={0.88} metalness={0.02} />
-        </mesh>
-        <mesh position={[0, 2.84, 0]} scale={genderProfile.headScale} castShadow>
-          <sphereGeometry args={[0.44, 28, 28]} />
-          <meshStandardMaterial color={skinColor} roughness={0.92} metalness={0.01} />
-        </mesh>
-        <mesh position={[-genderProfile.armOffset, 1.8, 0]} rotation={[0, 0, -genderProfile.armRotation]} castShadow>
-          <capsuleGeometry args={[0.18, 1.16, 8, 14]} />
-          <meshStandardMaterial color={skinColor} roughness={0.9} />
-        </mesh>
-        <mesh position={[genderProfile.armOffset, 1.8, 0]} rotation={[0, 0, genderProfile.armRotation]} castShadow>
-          <capsuleGeometry args={[0.18, 1.16, 8, 14]} />
-          <meshStandardMaterial color={skinColor} roughness={0.9} />
-        </mesh>
-        <mesh position={[0, 3.23, 0.02]} castShadow>
-          <sphereGeometry args={[0.47, 24, 24, 0, Math.PI]} />
-          <meshStandardMaterial color="#1e222a" roughness={0.96} />
-        </mesh>
+      <ambientLight intensity={0.68} />
+      <directionalLight position={[4, 6, 3]} intensity={1.25} castShadow />
+      <directionalLight position={[-3, 4, -4]} intensity={0.42} />
+
+      <group
+        scale={[
+          modelPlacement.scale * preset.bodyScale[0] * silhouetteScale[0],
+          modelPlacement.scale * preset.bodyScale[1] * silhouetteScale[1],
+          modelPlacement.scale * preset.bodyScale[2] * silhouetteScale[2]
+        ]}
+        position={modelPlacement.position}
+      >
+        <primitive object={modelScene} />
       </group>
 
-      <group scale={preset.shirtScale}>
-        <mesh position={[0, 1.62, 0]} castShadow receiveShadow>
-          <capsuleGeometry args={[Math.max(genderProfile.shoulderWidth, genderProfile.torsoWidth) + 0.06, preset.shirtLength, 12, 24]} />
-          <meshStandardMaterial
-            ref={shirtMaterialRef}
-            map={canvasTexture}
-            color={shirtColor}
-            roughness={0.97}
-            metalness={0}
-            wireframe={wireframe}
-          />
-        </mesh>
-        <mesh
-          position={[-genderProfile.armOffset, 1.84, 0]}
-          rotation={[0, 0, -(genderProfile.armRotation + 0.12)]}
-          castShadow
-        >
-          <capsuleGeometry args={[0.24, 0.9, 8, 14]} />
-          <meshStandardMaterial
-            map={canvasTexture}
-            color={shirtColor}
-            roughness={0.97}
-            metalness={0}
-            wireframe={wireframe}
-          />
-        </mesh>
-        <mesh
-          position={[genderProfile.armOffset, 1.84, 0]}
-          rotation={[0, 0, genderProfile.armRotation + 0.12]}
-          castShadow
-        >
-          <capsuleGeometry args={[0.24, 0.9, 8, 14]} />
-          <meshStandardMaterial
-            map={canvasTexture}
-            color={shirtColor}
-            roughness={0.97}
-            metalness={0}
-            wireframe={wireframe}
-          />
-        </mesh>
-      </group>
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0.05, 0]}>
-        <circleGeometry args={[6.4, 48]} />
-        <shadowMaterial opacity={0.22} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0.02, 0]}>
+        <circleGeometry args={[5.8, 48]} />
+        <shadowMaterial opacity={0.2} />
       </mesh>
-
-      <Grid
-        position={[0, 0, 0]}
-        args={[12, 12]}
-        cellColor="#223043"
-        sectionColor="#34465d"
-        fadeDistance={18}
-        fadeStrength={1.4}
-      />
 
       <OrbitControls
         ref={orbitRef}
@@ -214,3 +173,5 @@ export const ViewerScene = ({
     </>
   );
 };
+
+useGLTF.preload(MODEL_URL);

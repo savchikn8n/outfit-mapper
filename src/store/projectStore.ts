@@ -17,7 +17,12 @@ interface ProjectStore {
   selectedLayerId: string | null;
   textureRevision: number;
   statusMessage: StatusMessage;
-  importArtwork: (params: { source: string; name: string; type: ArtworkLayer["type"] }) => void;
+  importArtwork: (params: {
+    source: string;
+    name: string;
+    type: ArtworkLayer["type"];
+    targetRegion: TargetRegion;
+  }) => void;
   selectLayer: (id: string | null) => void;
   updateLayer: (id: string, patch: Partial<ArtworkLayer>) => void;
   deleteSelectedLayer: () => void;
@@ -78,7 +83,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   selectedLayerId: null,
   textureRevision: 0,
   statusMessage: { key: "ready" },
-  importArtwork: ({ source, name, type }) => {
+  importArtwork: ({ source, name, type, targetRegion }) => {
     const project = get().project;
     const layer: ArtworkLayer = {
       id: createId("layer"),
@@ -90,8 +95,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       opacity: 1,
       locked: false,
       visible: true,
-      targetRegion: "front",
-      ...layerDefaultsByRegion.front
+      targetRegion,
+      ...layerDefaultsByRegion[targetRegion]
     };
 
     set({

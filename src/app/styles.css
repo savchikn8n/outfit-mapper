@@ -136,6 +136,13 @@ input[type="color"] {
   font-size: 0.84rem;
 }
 
+.region-tabs {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  padding: 0 0.25rem;
+}
+
 .viewer-panel,
 .layout-stage-shell,
 .panel-card,
