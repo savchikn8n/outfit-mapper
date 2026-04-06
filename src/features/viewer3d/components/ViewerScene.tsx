@@ -142,13 +142,21 @@ export const ViewerScene = ({
 
   const frontRegion = layoutRegions.find((region) => region.id === "front") ?? layoutRegions[0];
   const overlayAspect = frontRegion.height / frontRegion.width;
-  const overlayWidth = modelPlacement.size.z * 0.54 * preset.shirtScale[0];
-  const overlayHeight = overlayWidth * overlayAspect;
-  const overlayDepth = Math.max(modelPlacement.size.x * 0.18, 0.18);
+  const frontScale: [number, number, number] = [
+    modelPlacement.size.z * 0.92 * preset.shirtScale[0],
+    modelPlacement.size.z * 0.92 * overlayAspect * preset.shirtScale[1],
+    Math.max(modelPlacement.size.x * 0.4, 0.28)
+  ];
+  const backScale: [number, number, number] = [
+    modelPlacement.size.z * 0.8 * preset.shirtScale[0],
+    modelPlacement.size.z * 0.8 * overlayAspect * preset.shirtScale[1],
+    Math.max(modelPlacement.size.x * 0.32, 0.24)
+  ];
   const overlayZ = modelPlacement.center.z;
-  const overlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.5;
-  const frontOverlayX = modelPlacement.center.x + modelPlacement.size.x * 0.12;
-  const backOverlayX = modelPlacement.center.x - modelPlacement.size.x * 0.12;
+  const frontOverlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.53;
+  const backOverlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.54;
+  const frontOverlayX = modelPlacement.box.max.x + frontScale[2] * 0.34;
+  const backOverlayX = modelPlacement.box.min.x - backScale[2] * 0.34;
 
   return (
     <>
@@ -169,18 +177,18 @@ export const ViewerScene = ({
           <ProjectedDecal
             mesh={targetMesh}
             texture={textures.front}
-            position={[frontOverlayX, overlayY, overlayZ]}
+            position={[frontOverlayX, frontOverlayY, overlayZ]}
             rotation={[0, -Math.PI / 2, 0]}
-            scale={[overlayWidth, overlayHeight, overlayDepth]}
+            scale={frontScale}
           />
         )}
         {targetMesh && backVisible && (
           <ProjectedDecal
             mesh={targetMesh}
             texture={textures.back}
-            position={[backOverlayX, overlayY, overlayZ]}
+            position={[backOverlayX, backOverlayY, overlayZ]}
             rotation={[0, Math.PI / 2, 0]}
-            scale={[overlayWidth, overlayHeight, overlayDepth]}
+            scale={backScale}
           />
         )}
       </group>
