@@ -154,10 +154,10 @@ export const ViewerScene = ({
   const overlayZ = modelPlacement.center.z;
   const overlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.48;
   const frontOverlayX =
-    modelPlacement.center.x + modelPlacement.size.x * 0.18 * preset.shirtScale[2];
+    modelPlacement.box.max.x + modelPlacement.size.x * 0.035 * preset.shirtScale[2];
   const backOverlayX =
-    modelPlacement.center.x - modelPlacement.size.x * 0.18 * preset.shirtScale[2];
-  const overlayCurveDepth = modelPlacement.size.x * 0.05;
+    modelPlacement.box.min.x - modelPlacement.size.x * 0.035 * preset.shirtScale[2];
+  const overlayCurveDepth = modelPlacement.size.x * 0.02;
 
   const frontGeometry = useMemo(
     () => createCurvedOverlayGeometry(overlayWidth, overlayHeight, overlayCurveDepth),
@@ -192,30 +192,38 @@ export const ViewerScene = ({
       >
         <primitive object={modelScene} />
         {frontVisible && (
-          <mesh position={[frontOverlayX, overlayY, overlayZ]} rotation={[0, Math.PI / 2, 0]}>
+          <mesh
+            position={[frontOverlayX, overlayY, overlayZ]}
+            rotation={[0, Math.PI / 2, 0]}
+            renderOrder={10}
+          >
             <primitive object={frontGeometry} attach="geometry" />
-            <meshStandardMaterial
+            <meshBasicMaterial
               map={textures.front}
               transparent
-              alphaTest={0.02}
-              side={THREE.FrontSide}
+              alphaTest={0.001}
+              side={THREE.DoubleSide}
+              depthTest={false}
               depthWrite={false}
-              polygonOffset
-              polygonOffsetFactor={-1}
+              toneMapped={false}
             />
           </mesh>
         )}
         {backVisible && (
-          <mesh position={[backOverlayX, overlayY, overlayZ]} rotation={[0, -Math.PI / 2, 0]}>
+          <mesh
+            position={[backOverlayX, overlayY, overlayZ]}
+            rotation={[0, -Math.PI / 2, 0]}
+            renderOrder={10}
+          >
             <primitive object={backGeometry} attach="geometry" />
-            <meshStandardMaterial
+            <meshBasicMaterial
               map={textures.back}
               transparent
-              alphaTest={0.02}
-              side={THREE.FrontSide}
+              alphaTest={0.001}
+              side={THREE.DoubleSide}
+              depthTest={false}
               depthWrite={false}
-              polygonOffset
-              polygonOffsetFactor={-1}
+              toneMapped={false}
             />
           </mesh>
         )}
