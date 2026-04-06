@@ -18,7 +18,12 @@ export const loadLastProject = (): ProjectData | null => {
 };
 
 export const persistProjectLocally = (project: ProjectData) => {
-  localStorage.setItem(LAST_PROJECT_KEY, JSON.stringify(project));
+  try {
+    localStorage.setItem(LAST_PROJECT_KEY, JSON.stringify(project));
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export const clearPersistedProject = () => {

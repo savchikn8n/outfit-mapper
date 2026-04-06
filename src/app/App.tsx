@@ -103,6 +103,10 @@ const AppContent = () => {
       targetRegion: activeRegion === "all" ? "front" : activeRegion
     });
 
+    if (activeRegion === "front" || activeRegion === "back") {
+      setCameraPreset(activeRegion);
+    }
+
     event.target.value = "";
   };
 
@@ -150,7 +154,7 @@ const AppContent = () => {
   };
 
   useEffect(() => {
-    persistProjectLocally(project);
+    void persistProjectLocally(project);
   }, [project]);
 
   return (

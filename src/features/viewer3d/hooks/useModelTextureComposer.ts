@@ -166,12 +166,22 @@ export const useModelTextureComposer = (
         );
 
         const baseData = baseProbeContext.getImageData(0, 0, targetWidth, targetHeight);
+        const maskCenterX = targetWidth * 0.5;
+        const maskCenterY = targetHeight * 0.5;
+        const maskRadiusX = (targetWidth * projection.maskScaleX) / 2;
+        const maskRadiusY = (targetHeight * projection.maskScaleY) / 2;
+        const maskOffsetX = targetWidth * projection.maskInsetX - targetWidth * 0.07;
+        const maskOffsetY = targetHeight * projection.maskInsetY - targetHeight * 0.05;
 
         for (let index = 0; index < artworkData.data.length; index += 4) {
           const alpha = artworkData.data[index + 3];
           if (alpha === 0) {
             continue;
           }
+
+          const pixel = index / 4;
+          const px = pixel % targetWidth;
+          const py = Math.floor(pixel / targetWidth);
 
           const red = baseData.data[index];
           const green = baseData.data[index + 1];
@@ -195,7 +205,13 @@ export const useModelTextureComposer = (
               1
             );
 
-          if (shirtConfidence <= 0.02) {
+          const ellipseX = (px - (maskCenterX + maskOffsetX)) / Math.max(maskRadiusX, 1);
+          const ellipseY = (py - (maskCenterY + maskOffsetY)) / Math.max(maskRadiusY, 1);
+          const ellipseDistance = ellipseX * ellipseX + ellipseY * ellipseY;
+          const shapeConfidence = clamp(1.08 - ellipseDistance, 0, 1);
+          const finalConfidence = shirtConfidence * shapeConfidence;
+
+          if (finalConfidence <= 0.06) {
             artworkData.data[index + 3] = 0;
             continue;
           }
@@ -217,7 +233,7 @@ export const useModelTextureComposer = (
             255
           );
           artworkData.data[index + 3] = clamp(
-            alpha * (0.25 + shirtConfidence * 0.9),
+            alpha * (0.18 + finalConfidence * 0.96),
             0,
             255
           );
