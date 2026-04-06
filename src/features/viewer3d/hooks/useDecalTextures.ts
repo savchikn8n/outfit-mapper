@@ -97,7 +97,11 @@ export const useDecalTextures = (layers: ArtworkLayer[], revision: number) => {
         canvas.width = sourceCanvas.width;
         canvas.height = sourceCanvas.height;
         context.clearRect(0, 0, canvas.width, canvas.height);
+        context.save();
+        context.translate(0, canvas.height);
+        context.scale(1, -1);
         context.drawImage(sourceCanvas, 0, 0);
+        context.restore();
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.flipY = false;
         texture.needsUpdate = true;

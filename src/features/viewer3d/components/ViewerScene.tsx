@@ -154,10 +154,10 @@ export const ViewerScene = ({
   const overlayZ = modelPlacement.center.z;
   const overlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.48;
   const frontOverlayX =
-    modelPlacement.box.max.x + modelPlacement.size.x * 0.035 * preset.shirtScale[2];
+    modelPlacement.box.max.x + modelPlacement.size.x * 0.012 * preset.shirtScale[2];
   const backOverlayX =
-    modelPlacement.box.min.x - modelPlacement.size.x * 0.035 * preset.shirtScale[2];
-  const overlayCurveDepth = modelPlacement.size.x * 0.02;
+    modelPlacement.box.min.x - modelPlacement.size.x * 0.012 * preset.shirtScale[2];
+  const overlayCurveDepth = modelPlacement.size.x * 0.035;
 
   const frontGeometry = useMemo(
     () => createCurvedOverlayGeometry(overlayWidth, overlayHeight, overlayCurveDepth),
@@ -201,11 +201,13 @@ export const ViewerScene = ({
             <meshBasicMaterial
               map={textures.front}
               transparent
-              alphaTest={0.001}
-              side={THREE.DoubleSide}
-              depthTest={false}
+              alphaTest={0.01}
+              side={THREE.FrontSide}
+              depthTest
               depthWrite={false}
               toneMapped={false}
+              polygonOffset
+              polygonOffsetFactor={-2}
             />
           </mesh>
         )}
@@ -219,11 +221,13 @@ export const ViewerScene = ({
             <meshBasicMaterial
               map={textures.back}
               transparent
-              alphaTest={0.001}
-              side={THREE.DoubleSide}
-              depthTest={false}
+              alphaTest={0.01}
+              side={THREE.FrontSide}
+              depthTest
               depthWrite={false}
               toneMapped={false}
+              polygonOffset
+              polygonOffsetFactor={-2}
             />
           </mesh>
         )}
