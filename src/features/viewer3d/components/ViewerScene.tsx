@@ -192,7 +192,7 @@ export const ViewerScene = ({
       >
         <primitive object={modelScene} />
         {frontVisible && (
-          <mesh position={[frontOverlayX, overlayY, overlayZ]} rotation={[0, -Math.PI / 2, 0]}>
+          <mesh position={[frontOverlayX, overlayY, overlayZ]} rotation={[0, Math.PI / 2, 0]}>
             <primitive object={frontGeometry} attach="geometry" />
             <meshStandardMaterial
               map={textures.front}
@@ -206,7 +206,7 @@ export const ViewerScene = ({
           </mesh>
         )}
         {backVisible && (
-          <mesh position={[backOverlayX, overlayY, overlayZ]} rotation={[0, Math.PI / 2, 0]}>
+          <mesh position={[backOverlayX, overlayY, overlayZ]} rotation={[0, -Math.PI / 2, 0]}>
             <primitive object={backGeometry} attach="geometry" />
             <meshStandardMaterial
               map={textures.back}
