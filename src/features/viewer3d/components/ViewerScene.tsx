@@ -32,6 +32,27 @@ const cameraPositions: Record<CameraPreset, [number, number, number]> = {
   perspective: [3.6, 2.2, 4.6]
 };
 
+const createCurvedOverlayGeometry = (
+  width: number,
+  height: number,
+  curveDepth: number
+) => {
+  const geometry = new THREE.PlaneGeometry(width, height, 32, 1);
+  const position = geometry.attributes.position;
+  const halfWidth = width / 2;
+
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index);
+    const normalized = halfWidth === 0 ? 0 : x / halfWidth;
+    const bow = Math.cos(normalized * (Math.PI / 2)) * curveDepth;
+    position.setZ(index, bow);
+  }
+
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
+};
+
 export const ViewerScene = ({
   artworkLayers,
   textureRevision,
@@ -128,14 +149,32 @@ export const ViewerScene = ({
     readyRevision > 0 &&
     artworkLayers.some((layer) => layer.visible && layer.targetRegion === "back");
 
-  const overlayWidth = modelPlacement.size.x * 0.34 * preset.shirtScale[0];
+  const overlayWidth = modelPlacement.size.z * 0.46 * preset.shirtScale[0];
   const overlayHeight = modelPlacement.size.y * 0.32 * preset.shirtScale[1];
   const overlayZ = modelPlacement.center.z;
   const overlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.48;
   const frontOverlayX =
-    modelPlacement.box.max.x + Math.max(modelPlacement.size.x * 0.02, 0.06) * preset.shirtScale[2];
+    modelPlacement.center.x + modelPlacement.size.x * 0.18 * preset.shirtScale[2];
   const backOverlayX =
-    modelPlacement.box.min.x - Math.max(modelPlacement.size.x * 0.02, 0.06) * preset.shirtScale[2];
+    modelPlacement.center.x - modelPlacement.size.x * 0.18 * preset.shirtScale[2];
+  const overlayCurveDepth = modelPlacement.size.x * 0.05;
+
+  const frontGeometry = useMemo(
+    () => createCurvedOverlayGeometry(overlayWidth, overlayHeight, overlayCurveDepth),
+    [overlayCurveDepth, overlayHeight, overlayWidth]
+  );
+  const backGeometry = useMemo(
+    () => createCurvedOverlayGeometry(overlayWidth, overlayHeight, overlayCurveDepth),
+    [overlayCurveDepth, overlayHeight, overlayWidth]
+  );
+
+  useEffect(
+    () => () => {
+      frontGeometry.dispose();
+      backGeometry.dispose();
+    },
+    [backGeometry, frontGeometry]
+  );
 
   return (
     <>
@@ -154,25 +193,29 @@ export const ViewerScene = ({
         <primitive object={modelScene} />
         {frontVisible && (
           <mesh position={[frontOverlayX, overlayY, overlayZ]} rotation={[0, -Math.PI / 2, 0]}>
-            <planeGeometry args={[overlayWidth, overlayHeight]} />
+            <primitive object={frontGeometry} attach="geometry" />
             <meshStandardMaterial
               map={textures.front}
               transparent
               alphaTest={0.02}
-              side={THREE.DoubleSide}
+              side={THREE.FrontSide}
               depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={-1}
             />
           </mesh>
         )}
         {backVisible && (
           <mesh position={[backOverlayX, overlayY, overlayZ]} rotation={[0, Math.PI / 2, 0]}>
-            <planeGeometry args={[overlayWidth, overlayHeight]} />
+            <primitive object={backGeometry} attach="geometry" />
             <meshStandardMaterial
               map={textures.back}
               transparent
               alphaTest={0.02}
-              side={THREE.DoubleSide}
+              side={THREE.FrontSide}
               depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={-1}
             />
           </mesh>
         )}
