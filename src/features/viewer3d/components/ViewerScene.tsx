@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Decal, OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
 import { avatarPresets } from "../../avatar/presets";
 import {
   ArtworkLayer,
@@ -165,42 +166,22 @@ export const ViewerScene = ({
       >
         <primitive object={modelScene} />
         {targetMesh && frontVisible && (
-          <Decal
+          <ProjectedDecal
             mesh={targetMesh}
+            texture={textures.front}
             position={[frontOverlayX, overlayY, overlayZ]}
             rotation={[0, -Math.PI / 2, 0]}
             scale={[overlayWidth, overlayHeight, overlayDepth]}
-          >
-            <meshBasicMaterial
-              map={textures.front}
-              transparent
-              alphaTest={0.01}
-              depthTest
-              depthWrite={false}
-              toneMapped={false}
-              polygonOffset
-              polygonOffsetFactor={-4}
-            />
-          </Decal>
+          />
         )}
         {targetMesh && backVisible && (
-          <Decal
+          <ProjectedDecal
             mesh={targetMesh}
+            texture={textures.back}
             position={[backOverlayX, overlayY, overlayZ]}
             rotation={[0, Math.PI / 2, 0]}
             scale={[overlayWidth, overlayHeight, overlayDepth]}
-          >
-            <meshBasicMaterial
-              map={textures.back}
-              transparent
-              alphaTest={0.01}
-              depthTest
-              depthWrite={false}
-              toneMapped={false}
-              polygonOffset
-              polygonOffsetFactor={-4}
-            />
-          </Decal>
+          />
         )}
       </group>
 
@@ -221,3 +202,59 @@ export const ViewerScene = ({
 };
 
 useGLTF.preload(MODEL_URL);
+
+interface ProjectedDecalProps {
+  mesh: THREE.Mesh;
+  texture: THREE.Texture;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+}
+
+const ProjectedDecal = ({
+  mesh,
+  texture,
+  position,
+  rotation,
+  scale
+}: ProjectedDecalProps) => {
+  const geometry = useMemo(() => {
+    try {
+      return new DecalGeometry(
+        mesh,
+        new THREE.Vector3(...position),
+        new THREE.Euler(...rotation),
+        new THREE.Vector3(...scale)
+      );
+    } catch (error) {
+      console.error("Decal projection failed", error);
+      return null;
+    }
+  }, [mesh, position, rotation, scale]);
+
+  useEffect(
+    () => () => {
+      geometry?.dispose();
+    },
+    [geometry]
+  );
+
+  if (!geometry) {
+    return null;
+  }
+
+  return (
+    <mesh geometry={geometry} renderOrder={10}>
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        alphaTest={0.01}
+        depthTest
+        depthWrite={false}
+        toneMapped={false}
+        polygonOffset
+        polygonOffsetFactor={-4}
+      />
+    </mesh>
+  );
+};
