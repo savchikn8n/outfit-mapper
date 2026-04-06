@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { OrbitControls, Grid } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { avatarPresets } from "../../avatar/presets";
 import { CameraPreset, MannequinPresetId } from "../../../types/app";
 
@@ -34,10 +35,7 @@ export const ViewerScene = ({
   cameraPreset,
   onViewportReady
 }: ViewerSceneProps) => {
-  const orbitRef = useRef<{
-    target: THREE.Vector3;
-    update: () => void;
-  } | null>(null);
+  const orbitRef = useRef<OrbitControlsImpl | null>(null);
   const shirtMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
   const { camera, gl, scene } = useThree();
 
