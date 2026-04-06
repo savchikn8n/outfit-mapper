@@ -94,6 +94,7 @@ export const ViewerScene = ({
 
     return {
       scale,
+      box,
       size,
       center,
       position: [-center.x * scale, -box.min.y * scale, -center.z * scale] as [
@@ -127,10 +128,14 @@ export const ViewerScene = ({
     readyRevision > 0 &&
     artworkLayers.some((layer) => layer.visible && layer.targetRegion === "back");
 
-  const overlayWidth = modelPlacement.size.x * 0.48;
-  const overlayHeight = modelPlacement.size.y * 0.54;
-  const overlayDepth = Math.max(modelPlacement.size.z * 0.28, 0.24);
-  const overlayY = modelPlacement.size.y * 0.57;
+  const overlayWidth = modelPlacement.size.x * 0.34 * preset.shirtScale[0];
+  const overlayHeight = modelPlacement.size.y * 0.32 * preset.shirtScale[1];
+  const overlayX = modelPlacement.center.x;
+  const overlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.48;
+  const frontOverlayZ =
+    modelPlacement.box.max.z + Math.max(modelPlacement.size.z * 0.02, 0.06) * preset.shirtScale[2];
+  const backOverlayZ =
+    modelPlacement.box.min.z - Math.max(modelPlacement.size.z * 0.02, 0.06) * preset.shirtScale[2];
 
   return (
     <>
@@ -148,7 +153,7 @@ export const ViewerScene = ({
       >
         <primitive object={modelScene} />
         {frontVisible && (
-          <mesh position={[0, overlayY, overlayDepth]} rotation={[0, 0, 0]}>
+          <mesh position={[overlayX, overlayY, frontOverlayZ]} rotation={[0, 0, 0]}>
             <planeGeometry args={[overlayWidth, overlayHeight]} />
             <meshStandardMaterial
               map={textures.front}
@@ -160,7 +165,7 @@ export const ViewerScene = ({
           </mesh>
         )}
         {backVisible && (
-          <mesh position={[0, overlayY, -overlayDepth]} rotation={[0, Math.PI, 0]}>
+          <mesh position={[overlayX, overlayY, backOverlayZ]} rotation={[0, Math.PI, 0]}>
             <planeGeometry args={[overlayWidth, overlayHeight]} />
             <meshStandardMaterial
               map={textures.back}
