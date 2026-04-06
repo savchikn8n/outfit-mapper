@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { layoutRegions } from "../../layout2d/layoutRegions";
+import { getRegionShapePath, layoutRegions } from "../../layout2d/layoutRegions";
 import { ArtworkLayer, TargetRegion } from "../../../types/app";
 import { loadImageElement } from "../../../utils/image";
 import {
@@ -45,6 +45,9 @@ const getRegionArtworkCanvas = async (
     .filter((layer) => layer.visible && layer.targetRegion === regionId)
     .sort((left, right) => left.zIndex - right.zIndex);
 
+  context.save();
+  context.clip(new Path2D(getRegionShapePath(region)));
+
   for (const layer of regionLayers) {
     try {
       const image = await getCachedImage(layer.source);
@@ -67,6 +70,8 @@ const getRegionArtworkCanvas = async (
       // Ignore bad layers to keep the preview stable.
     }
   }
+
+  context.restore();
 
   return canvas;
 };

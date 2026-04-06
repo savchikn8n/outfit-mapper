@@ -18,26 +18,26 @@ export const MODEL_REGION_PROJECTIONS: Record<
   }
 > = {
   front: {
-    x: 0.09,
-    y: 0.2,
-    width: 0.28,
-    height: 0.35,
+    x: 0.18,
+    y: 0.32,
+    width: 0.34,
+    height: 0.47,
     supported: true,
-    maskInsetX: 0.14,
-    maskInsetY: 0.07,
-    maskScaleX: 0.72,
-    maskScaleY: 0.82
+    maskInsetX: 0.08,
+    maskInsetY: 0.04,
+    maskScaleX: 0.84,
+    maskScaleY: 0.9
   },
   back: {
-    x: 0.24,
-    y: 0.59,
+    x: 0.01,
+    y: 0.2,
     width: 0.3,
-    height: 0.24,
+    height: 0.5,
     supported: true,
-    maskInsetX: 0.12,
-    maskInsetY: 0.12,
-    maskScaleX: 0.76,
-    maskScaleY: 0.72
+    maskInsetX: 0.08,
+    maskInsetY: 0.04,
+    maskScaleX: 0.82,
+    maskScaleY: 0.9
   },
   leftSleeve: {
     x: 0.01,

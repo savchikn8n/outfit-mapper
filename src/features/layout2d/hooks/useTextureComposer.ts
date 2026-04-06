@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { layoutRegions } from "../layoutRegions";
+import { getRegionShapePath, layoutRegions } from "../layoutRegions";
 import { ArtworkLayer } from "../../../types/app";
 import { loadImageElement } from "../../../utils/image";
 
@@ -50,14 +50,11 @@ export const useTextureComposer = (
 
       for (const region of layoutRegions) {
         context.save();
+        context.translate(region.x * scaleX, region.y * scaleY);
+        context.scale(scaleX, scaleY);
         context.fillStyle = region.color;
         context.globalAlpha = 0.12;
-        context.fillRect(
-          region.x * scaleX,
-          region.y * scaleY,
-          region.width * scaleX,
-          region.height * scaleY
-        );
+        context.fill(new Path2D(getRegionShapePath(region)));
         context.restore();
       }
 
@@ -72,7 +69,17 @@ export const useTextureComposer = (
             return;
           }
 
+          const region = layoutRegions.find((entry) => entry.id === layer.targetRegion);
+          if (!region) {
+            continue;
+          }
+
           context.save();
+          context.translate(region.x * scaleX, region.y * scaleY);
+          context.scale(scaleX, scaleY);
+          context.clip(new Path2D(getRegionShapePath(region)));
+          context.scale(1 / scaleX, 1 / scaleY);
+          context.translate(-region.x * scaleX, -region.y * scaleY);
           context.globalAlpha = layer.opacity;
           context.translate(layer.x * scaleX + (layer.width * scaleX) / 2, layer.y * scaleY + (layer.height * scaleY) / 2);
           context.rotate((layer.rotation * Math.PI) / 180);

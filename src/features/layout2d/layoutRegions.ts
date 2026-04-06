@@ -37,3 +37,32 @@ export const layoutRegions: RegionDefinition[] = [
     color: "#363022"
   }
 ];
+
+const shirtPath = (width: number, height: number) =>
+  [
+    `M ${width * 0.22} ${height * 0.08}`,
+    `Q ${width * 0.5} ${-height * 0.02} ${width * 0.78} ${height * 0.08}`,
+    `L ${width * 0.98} ${height * 0.2}`,
+    `L ${width * 0.84} ${height * 0.35}`,
+    `L ${width * 0.78} ${height * 0.98}`,
+    `L ${width * 0.22} ${height * 0.98}`,
+    `L ${width * 0.16} ${height * 0.35}`,
+    `L ${width * 0.02} ${height * 0.2}`,
+    "Z"
+  ].join(" ");
+
+const sleevePath = (width: number, height: number) =>
+  [
+    `M ${width * 0.12} ${height * 0.16}`,
+    `L ${width * 0.88} ${height * 0.08}`,
+    `L ${width * 0.98} ${height * 0.52}`,
+    `L ${width * 0.72} ${height * 0.92}`,
+    `L ${width * 0.18} ${height * 0.86}`,
+    `L ${width * 0.02} ${height * 0.46}`,
+    "Z"
+  ].join(" ");
+
+export const getRegionShapePath = (region: RegionDefinition) =>
+  region.id === "front" || region.id === "back"
+    ? shirtPath(region.width, region.height)
+    : sleevePath(region.width, region.height);

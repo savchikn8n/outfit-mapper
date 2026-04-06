@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Konva from "konva";
-import { Group, Layer, Rect, Stage, Text, Transformer } from "react-konva";
+import { Group, Layer, Path, Rect, Stage, Text, Transformer } from "react-konva";
 import { ArtworkLayer } from "../../../types/app";
 import { useI18n } from "../../../app/i18n";
-import { layoutRegions, LAYOUT_HEIGHT, LAYOUT_WIDTH } from "../layoutRegions";
+import {
+  getRegionShapePath,
+  layoutRegions,
+  LAYOUT_HEIGHT,
+  LAYOUT_WIDTH
+} from "../layoutRegions";
 import { ArtworkNode } from "./ArtworkNode";
 
 interface LayoutEditorProps {
@@ -139,16 +144,14 @@ export const LayoutEditor = ({
 
           {visibleRegions.map((region) => (
             <Group key={region.id}>
-              <Rect
+              <Path
                 x={region.x}
                 y={region.y}
-                width={region.width}
-                height={region.height}
+                data={getRegionShapePath(region)}
                 fill={region.color}
-                opacity={0.9}
+                opacity={0.96}
                 stroke="#607089"
                 strokeWidth={2}
-                cornerRadius={18}
               />
               <Text
                 x={region.x}
@@ -163,14 +166,31 @@ export const LayoutEditor = ({
 
           {[...layers]
             .sort((left, right) => left.zIndex - right.zIndex)
-            .map((layer) => (
-              <ArtworkNode
-                key={layer.id}
-                layer={layer}
-                isSelected={selectedLayerId === layer.id}
-                onSelect={() => !layer.locked && onSelectLayer(layer.id)}
-              />
-            ))}
+            .map((layer) => {
+              const region = layoutRegions.find((entry) => entry.id === layer.targetRegion);
+              if (!region) {
+                return null;
+              }
+
+              return (
+                <Group
+                  key={layer.id}
+                  clipFunc={(context) => {
+                    context.beginPath();
+                    const path = new Path2D(getRegionShapePath(region));
+                    context.translate(region.x, region.y);
+                    context.clip(path);
+                    context.translate(-region.x, -region.y);
+                  }}
+                >
+                  <ArtworkNode
+                    layer={layer}
+                    isSelected={selectedLayerId === layer.id}
+                    onSelect={() => !layer.locked && onSelectLayer(layer.id)}
+                  />
+                </Group>
+              );
+            })}
 
           <Transformer
             ref={transformerRef}
