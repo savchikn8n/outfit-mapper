@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { Decal, OrbitControls, useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { avatarPresets } from "../../avatar/presets";
@@ -31,27 +31,6 @@ const cameraPositions: Record<CameraPreset, [number, number, number]> = {
   left: [0, 1.8, 5],
   right: [0, 1.8, -5],
   perspective: [3.6, 2.2, 4.6]
-};
-
-const createCurvedOverlayGeometry = (
-  width: number,
-  height: number,
-  curveDepth: number
-) => {
-  const geometry = new THREE.PlaneGeometry(width, height, 32, 1);
-  const position = geometry.attributes.position;
-  const halfWidth = width / 2;
-
-  for (let index = 0; index < position.count; index += 1) {
-    const x = position.getX(index);
-    const normalized = halfWidth === 0 ? 0 : x / halfWidth;
-    const bow = Math.cos(normalized * (Math.PI / 2)) * curveDepth;
-    position.setZ(index, bow);
-  }
-
-  position.needsUpdate = true;
-  geometry.computeVertexNormals();
-  return geometry;
 };
 
 export const ViewerScene = ({
@@ -127,6 +106,16 @@ export const ViewerScene = ({
     };
   }, [modelScene]);
 
+  const targetMesh = useMemo(() => {
+    let mesh: THREE.Mesh | null = null;
+    modelScene.traverse((object) => {
+      if (!mesh && object instanceof THREE.Mesh) {
+        mesh = object;
+      }
+    });
+    return mesh;
+  }, [modelScene]);
+
   useEffect(() => {
     onViewportReady(gl.domElement);
   }, [gl.domElement, onViewportReady]);
@@ -154,30 +143,11 @@ export const ViewerScene = ({
   const overlayAspect = frontRegion.height / frontRegion.width;
   const overlayWidth = modelPlacement.size.z * 0.54 * preset.shirtScale[0];
   const overlayHeight = overlayWidth * overlayAspect;
+  const overlayDepth = Math.max(modelPlacement.size.x * 0.18, 0.18);
   const overlayZ = modelPlacement.center.z;
   const overlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.5;
-  const frontOverlayX =
-    modelPlacement.box.max.x + modelPlacement.size.x * 0.004 * preset.shirtScale[2];
-  const backOverlayX =
-    modelPlacement.box.min.x - modelPlacement.size.x * 0.004 * preset.shirtScale[2];
-  const overlayCurveDepth = modelPlacement.size.x * 0.035;
-
-  const frontGeometry = useMemo(
-    () => createCurvedOverlayGeometry(overlayWidth, overlayHeight, overlayCurveDepth),
-    [overlayCurveDepth, overlayHeight, overlayWidth]
-  );
-  const backGeometry = useMemo(
-    () => createCurvedOverlayGeometry(overlayWidth, overlayHeight, overlayCurveDepth),
-    [overlayCurveDepth, overlayHeight, overlayWidth]
-  );
-
-  useEffect(
-    () => () => {
-      frontGeometry.dispose();
-      backGeometry.dispose();
-    },
-    [backGeometry, frontGeometry]
-  );
+  const frontOverlayX = modelPlacement.center.x + modelPlacement.size.x * 0.12;
+  const backOverlayX = modelPlacement.center.x - modelPlacement.size.x * 0.12;
 
   return (
     <>
@@ -194,45 +164,43 @@ export const ViewerScene = ({
         position={modelPlacement.position}
       >
         <primitive object={modelScene} />
-        {frontVisible && (
-          <mesh
+        {targetMesh && frontVisible && (
+          <Decal
+            mesh={targetMesh}
             position={[frontOverlayX, overlayY, overlayZ]}
-            rotation={[0, Math.PI / 2, 0]}
-            renderOrder={10}
+            rotation={[0, -Math.PI / 2, 0]}
+            scale={[overlayWidth, overlayHeight, overlayDepth]}
           >
-            <primitive object={frontGeometry} attach="geometry" />
             <meshBasicMaterial
               map={textures.front}
               transparent
               alphaTest={0.01}
-              side={THREE.FrontSide}
               depthTest
               depthWrite={false}
               toneMapped={false}
               polygonOffset
-              polygonOffsetFactor={-2}
+              polygonOffsetFactor={-4}
             />
-          </mesh>
+          </Decal>
         )}
-        {backVisible && (
-          <mesh
+        {targetMesh && backVisible && (
+          <Decal
+            mesh={targetMesh}
             position={[backOverlayX, overlayY, overlayZ]}
-            rotation={[0, -Math.PI / 2, 0]}
-            renderOrder={10}
+            rotation={[0, Math.PI / 2, 0]}
+            scale={[overlayWidth, overlayHeight, overlayDepth]}
           >
-            <primitive object={backGeometry} attach="geometry" />
             <meshBasicMaterial
               map={textures.back}
               transparent
               alphaTest={0.01}
-              side={THREE.FrontSide}
               depthTest
               depthWrite={false}
               toneMapped={false}
               polygonOffset
-              polygonOffsetFactor={-2}
+              polygonOffsetFactor={-4}
             />
-          </mesh>
+          </Decal>
         )}
       </group>
 
