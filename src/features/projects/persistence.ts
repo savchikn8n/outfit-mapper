@@ -1,16 +1,17 @@
 import { ProjectData } from "../../types/app";
 import { downloadJson } from "../../utils/download";
+import { normalizeProjectData } from "./normalizeProject";
 
 const LAST_PROJECT_KEY = "outfit-mapper:last-project";
 
 export const loadLastProject = (): ProjectData | null => {
-  const savedProject = localStorage.getItem(LAST_PROJECT_KEY);
-  if (!savedProject) {
-    return null;
-  }
-
   try {
-    return JSON.parse(savedProject) as ProjectData;
+    const savedProject = localStorage.getItem(LAST_PROJECT_KEY);
+    if (!savedProject) {
+      return null;
+    }
+
+    return normalizeProjectData(JSON.parse(savedProject));
   } catch {
     localStorage.removeItem(LAST_PROJECT_KEY);
     return null;
@@ -49,7 +50,7 @@ export const openProjectFile = async () =>
 
       try {
         const text = await file.text();
-        resolve(JSON.parse(text) as ProjectData);
+        resolve(normalizeProjectData(JSON.parse(text)));
       } catch {
         resolve(null);
       }

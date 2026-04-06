@@ -5,12 +5,12 @@ import {
   AvatarGender,
   CameraPreset,
   MannequinPresetId,
-  SceneSettings,
   StatusMessage,
   TargetRegion,
   UiLanguage
 } from "../types/app";
 import { createId } from "../utils/id";
+import { defaultSceneSettings } from "../features/projects/normalizeProject";
 
 interface ProjectStore {
   project: ProjectData;
@@ -41,16 +41,6 @@ interface ProjectStore {
   loadProject: (project: ProjectData) => void;
   setStatusMessage: (message: StatusMessage) => void;
 }
-
-const defaultSceneSettings: SceneSettings = {
-  mannequinPreset: "regular",
-  avatarGender: "male",
-  language: "ru",
-  backgroundColor: "#10141b",
-  shirtBaseColor: "#111111",
-  wireframe: false,
-  cameraPreset: "perspective"
-};
 
 const createProject = (): ProjectData => ({
   id: createId("project"),

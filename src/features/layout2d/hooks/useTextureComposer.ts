@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getRegionShapePath, layoutRegions } from "../layoutRegions";
+import { layoutRegions, traceRegionShape } from "../layoutRegions";
 import { ArtworkLayer } from "../../../types/app";
 import { loadImageElement } from "../../../utils/image";
 
@@ -54,7 +54,8 @@ export const useTextureComposer = (
         context.scale(scaleX, scaleY);
         context.fillStyle = region.color;
         context.globalAlpha = 0.12;
-        context.fill(new Path2D(getRegionShapePath(region)));
+        traceRegionShape(context, { ...region, x: 0, y: 0 });
+        context.fill();
         context.restore();
       }
 
@@ -77,7 +78,8 @@ export const useTextureComposer = (
           context.save();
           context.translate(region.x * scaleX, region.y * scaleY);
           context.scale(scaleX, scaleY);
-          context.clip(new Path2D(getRegionShapePath(region)));
+          traceRegionShape(context, { ...region, x: 0, y: 0 });
+          context.clip();
           context.scale(1 / scaleX, 1 / scaleY);
           context.translate(-region.x * scaleX, -region.y * scaleY);
           context.globalAlpha = layer.opacity;

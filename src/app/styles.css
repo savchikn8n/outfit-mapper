@@ -200,6 +200,33 @@ input[type="color"] {
   background: linear-gradient(90deg, #6bb6ff, #9fd3ff);
 }
 
+.app-crash-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.app-crash-screen__card {
+  width: min(520px, 100%);
+  border-radius: 22px;
+  background: rgba(10, 15, 22, 0.94);
+  border: 1px solid rgba(136, 160, 193, 0.18);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+  padding: 24px;
+}
+
+.app-crash-screen__card h1 {
+  margin: 0 0 12px;
+  font-size: 1.35rem;
+}
+
+.app-crash-screen__card p {
+  margin: 0 0 20px;
+  color: #b8c5d8;
+  line-height: 1.5;
+}
+
 .editor-grid {
   display: flex;
   flex-direction: column;

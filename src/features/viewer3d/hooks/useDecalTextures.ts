@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { ArtworkLayer, TargetRegion } from "../../../types/app";
-import { getRegionShapePath, layoutRegions } from "../../layout2d/layoutRegions";
+import { layoutRegions, traceRegionShape } from "../../layout2d/layoutRegions";
 import { loadImageElement } from "../../../utils/image";
 
 const imageCache = new Map<string, Promise<HTMLImageElement>>();
@@ -36,7 +36,8 @@ const createRegionCanvas = async (regionId: TargetRegion, layers: ArtworkLayer[]
 
   context.save();
   context.scale(scaleX, scaleY);
-  context.clip(new Path2D(getRegionShapePath({ ...region, x: 0, y: 0 })));
+  traceRegionShape(context, { ...region, x: 0, y: 0 });
+  context.clip();
 
   const regionLayers = layers
     .filter((layer) => layer.visible && layer.targetRegion === regionId)
