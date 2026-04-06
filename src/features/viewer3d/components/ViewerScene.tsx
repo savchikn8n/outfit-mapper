@@ -25,10 +25,10 @@ interface ViewerSceneProps {
 }
 
 const cameraPositions: Record<CameraPreset, [number, number, number]> = {
-  front: [0, 1.8, 5],
-  back: [0, 1.8, -5],
-  left: [-5, 1.8, 0],
-  right: [5, 1.8, 0],
+  front: [5, 1.8, 0],
+  back: [-5, 1.8, 0],
+  left: [0, 1.8, 5],
+  right: [0, 1.8, -5],
   perspective: [3.6, 2.2, 4.6]
 };
 
@@ -130,12 +130,12 @@ export const ViewerScene = ({
 
   const overlayWidth = modelPlacement.size.x * 0.34 * preset.shirtScale[0];
   const overlayHeight = modelPlacement.size.y * 0.32 * preset.shirtScale[1];
-  const overlayX = modelPlacement.center.x;
+  const overlayZ = modelPlacement.center.z;
   const overlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.48;
-  const frontOverlayZ =
-    modelPlacement.box.max.z + Math.max(modelPlacement.size.z * 0.02, 0.06) * preset.shirtScale[2];
-  const backOverlayZ =
-    modelPlacement.box.min.z - Math.max(modelPlacement.size.z * 0.02, 0.06) * preset.shirtScale[2];
+  const frontOverlayX =
+    modelPlacement.box.max.x + Math.max(modelPlacement.size.x * 0.02, 0.06) * preset.shirtScale[2];
+  const backOverlayX =
+    modelPlacement.box.min.x - Math.max(modelPlacement.size.x * 0.02, 0.06) * preset.shirtScale[2];
 
   return (
     <>
@@ -153,7 +153,7 @@ export const ViewerScene = ({
       >
         <primitive object={modelScene} />
         {frontVisible && (
-          <mesh position={[overlayX, overlayY, frontOverlayZ]} rotation={[0, 0, 0]}>
+          <mesh position={[frontOverlayX, overlayY, overlayZ]} rotation={[0, -Math.PI / 2, 0]}>
             <planeGeometry args={[overlayWidth, overlayHeight]} />
             <meshStandardMaterial
               map={textures.front}
@@ -165,7 +165,7 @@ export const ViewerScene = ({
           </mesh>
         )}
         {backVisible && (
-          <mesh position={[overlayX, overlayY, backOverlayZ]} rotation={[0, Math.PI, 0]}>
+          <mesh position={[backOverlayX, overlayY, overlayZ]} rotation={[0, Math.PI / 2, 0]}>
             <planeGeometry args={[overlayWidth, overlayHeight]} />
             <meshStandardMaterial
               map={textures.back}
