@@ -34,6 +34,23 @@ const cameraPositions: Record<CameraPreset, [number, number, number]> = {
   perspective: [3.6, 2.2, 4.6]
 };
 
+const decalConfig = {
+  front: {
+    width: 0.54,
+    depth: 0.2,
+    xOffset: 0.08,
+    yOffset: 0.5,
+    zOffset: -0.01
+  },
+  back: {
+    width: 0.62,
+    depth: 0.22,
+    xOffset: 0.08,
+    yOffset: 0.52,
+    zOffset: 0
+  }
+} as const;
+
 export const ViewerScene = ({
   artworkLayers,
   textureRevision,
@@ -143,20 +160,23 @@ export const ViewerScene = ({
   const frontRegion = layoutRegions.find((region) => region.id === "front") ?? layoutRegions[0];
   const overlayAspect = frontRegion.height / frontRegion.width;
   const frontScale: [number, number, number] = [
-    modelPlacement.size.z * 0.92 * preset.shirtScale[0],
-    modelPlacement.size.z * 0.92 * overlayAspect * preset.shirtScale[1],
-    Math.max(modelPlacement.size.x * 0.4, 0.28)
+    modelPlacement.size.z * decalConfig.front.width * preset.shirtScale[0],
+    modelPlacement.size.z * decalConfig.front.width * overlayAspect * preset.shirtScale[1],
+    Math.max(modelPlacement.size.x * decalConfig.front.depth, 0.16)
   ];
   const backScale: [number, number, number] = [
-    modelPlacement.size.z * 0.8 * preset.shirtScale[0],
-    modelPlacement.size.z * 0.8 * overlayAspect * preset.shirtScale[1],
-    Math.max(modelPlacement.size.x * 0.32, 0.24)
+    modelPlacement.size.z * decalConfig.back.width * preset.shirtScale[0],
+    modelPlacement.size.z * decalConfig.back.width * overlayAspect * preset.shirtScale[1],
+    Math.max(modelPlacement.size.x * decalConfig.back.depth, 0.18)
   ];
-  const overlayZ = modelPlacement.center.z;
-  const frontOverlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.53;
-  const backOverlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.54;
-  const frontOverlayX = modelPlacement.box.max.x + frontScale[2] * 0.34;
-  const backOverlayX = modelPlacement.box.min.x - backScale[2] * 0.34;
+  const frontOverlayZ = modelPlacement.center.z + modelPlacement.size.z * decalConfig.front.zOffset;
+  const backOverlayZ = modelPlacement.center.z + modelPlacement.size.z * decalConfig.back.zOffset;
+  const frontOverlayY =
+    modelPlacement.box.min.y + modelPlacement.size.y * decalConfig.front.yOffset;
+  const backOverlayY =
+    modelPlacement.box.min.y + modelPlacement.size.y * decalConfig.back.yOffset;
+  const frontOverlayX = modelPlacement.box.max.x + frontScale[2] * decalConfig.front.xOffset;
+  const backOverlayX = modelPlacement.box.min.x - backScale[2] * decalConfig.back.xOffset;
 
   return (
     <>
@@ -177,7 +197,7 @@ export const ViewerScene = ({
           <ProjectedDecal
             mesh={targetMesh}
             texture={textures.front}
-            position={[frontOverlayX, frontOverlayY, overlayZ]}
+            position={[frontOverlayX, frontOverlayY, frontOverlayZ]}
             rotation={[0, -Math.PI / 2, 0]}
             scale={frontScale}
           />
@@ -186,7 +206,7 @@ export const ViewerScene = ({
           <ProjectedDecal
             mesh={targetMesh}
             texture={textures.back}
-            position={[backOverlayX, backOverlayY, overlayZ]}
+            position={[backOverlayX, backOverlayY, backOverlayZ]}
             rotation={[0, Math.PI / 2, 0]}
             scale={backScale}
           />
