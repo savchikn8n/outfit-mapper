@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { Decal, OrbitControls, useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { avatarPresets } from "../../avatar/presets";
@@ -9,8 +9,8 @@ import {
   CameraPreset,
   MannequinPresetId
 } from "../../../types/app";
-import { useModelTextureComposer } from "../hooks/useModelTextureComposer";
 import { MODEL_URL } from "../modelHackConfig";
+import { useDecalTextures } from "../hooks/useDecalTextures";
 
 interface ViewerSceneProps {
   artworkLayers: ArtworkLayer[];
@@ -35,7 +35,6 @@ const cameraPositions: Record<CameraPreset, [number, number, number]> = {
 export const ViewerScene = ({
   artworkLayers,
   textureRevision,
-  shirtBaseColor,
   backgroundColor,
   wireframe,
   mannequinPreset,
@@ -60,18 +59,7 @@ export const ViewerScene = ({
     [avatarGender]
   );
 
-  const { textureCanvas, textureReadyRevision } = useModelTextureComposer(
-    artworkLayers,
-    textureRevision
-  );
-
-  const canvasTexture = useMemo(() => {
-    const texture = new THREE.CanvasTexture(textureCanvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.flipY = false;
-    texture.needsUpdate = true;
-    return texture;
-  }, [textureCanvas]);
+  const { textures, readyRevision } = useDecalTextures(artworkLayers, textureRevision);
 
   const modelScene = useMemo(() => {
     const clone = gltf.scene.clone(true);
@@ -85,9 +73,25 @@ export const ViewerScene = ({
       if (!object.geometry.getAttribute("normal")) {
         object.geometry.computeVertexNormals();
       }
+
+      if (Array.isArray(object.material)) {
+        object.material = object.material.map((material) => material.clone());
+      } else {
+        object.material = object.material.clone();
+      }
     });
     return clone;
   }, [gltf.scene]);
+
+  const targetMesh = useMemo(() => {
+    let mesh: THREE.Mesh | null = null;
+    modelScene.traverse((object) => {
+      if (!mesh && object instanceof THREE.Mesh) {
+        mesh = object;
+      }
+    });
+    return mesh;
+  }, [modelScene]);
 
   const modelPlacement = useMemo(() => {
     const box = new THREE.Box3().setFromObject(modelScene);
@@ -100,6 +104,8 @@ export const ViewerScene = ({
 
     return {
       scale,
+      size,
+      center,
       position: [-center.x * scale, -box.min.y * scale, -center.z * scale] as [
         number,
         number,
@@ -117,32 +123,6 @@ export const ViewerScene = ({
   }, [backgroundColor, scene]);
 
   useEffect(() => {
-    canvasTexture.needsUpdate = true;
-    modelScene.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) {
-        return;
-      }
-
-      const sourceMaterial = Array.isArray(object.material)
-        ? object.material[0]
-        : object.material;
-      const fallbackMap =
-        sourceMaterial instanceof THREE.MeshStandardMaterial ||
-        sourceMaterial instanceof THREE.MeshBasicMaterial
-          ? sourceMaterial.map ?? null
-          : null;
-
-      object.material = new THREE.MeshStandardMaterial({
-        map: textureReadyRevision > 0 ? canvasTexture : fallbackMap,
-        color: new THREE.Color("#ffffff"),
-        roughness: 0.96,
-        metalness: 0,
-        wireframe
-      });
-    });
-  }, [canvasTexture, modelScene, shirtBaseColor, textureReadyRevision, wireframe]);
-
-  useEffect(() => {
     const position = cameraPositions[cameraPreset];
     camera.position.set(...position);
     camera.lookAt(0, 1.5, 0);
@@ -150,9 +130,12 @@ export const ViewerScene = ({
     orbitRef.current?.update();
   }, [camera, cameraPreset]);
 
+  const frontVisible = readyRevision > 0;
+  const backVisible = readyRevision > 0;
+
   return (
     <>
-      <ambientLight intensity={0.68} />
+      <ambientLight intensity={0.7} />
       <directionalLight position={[4, 6, 3]} intensity={1.25} castShadow />
       <directionalLight position={[-3, 4, -4]} intensity={0.42} />
 
@@ -165,6 +148,40 @@ export const ViewerScene = ({
         position={modelPlacement.position}
       >
         <primitive object={modelScene} />
+        {targetMesh && frontVisible && (
+          <Decal
+            mesh={targetMesh}
+            position={[0, modelPlacement.size.y * 0.56, modelPlacement.size.z * 0.18]}
+            rotation={[0, 0, 0]}
+            scale={[modelPlacement.size.x * 0.56, modelPlacement.size.y * 0.62, modelPlacement.size.z * 0.45]}
+          >
+            <meshStandardMaterial
+              map={textures.front}
+              transparent
+              depthTest
+              depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={-1}
+            />
+          </Decal>
+        )}
+        {targetMesh && backVisible && (
+          <Decal
+            mesh={targetMesh}
+            position={[0, modelPlacement.size.y * 0.57, -modelPlacement.size.z * 0.2]}
+            rotation={[0, Math.PI, 0]}
+            scale={[modelPlacement.size.x * 0.56, modelPlacement.size.y * 0.64, modelPlacement.size.z * 0.45]}
+          >
+            <meshStandardMaterial
+              map={textures.back}
+              transparent
+              depthTest
+              depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={-1}
+            />
+          </Decal>
+        )}
       </group>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0.02, 0]}>
