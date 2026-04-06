@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Decal, OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { avatarPresets } from "../../avatar/presets";
@@ -83,16 +83,6 @@ export const ViewerScene = ({
     return clone;
   }, [gltf.scene]);
 
-  const targetMesh = useMemo(() => {
-    let mesh: THREE.Mesh | null = null;
-    modelScene.traverse((object) => {
-      if (!mesh && object instanceof THREE.Mesh) {
-        mesh = object;
-      }
-    });
-    return mesh;
-  }, [modelScene]);
-
   const modelPlacement = useMemo(() => {
     const box = new THREE.Box3().setFromObject(modelScene);
     const size = new THREE.Vector3();
@@ -130,8 +120,17 @@ export const ViewerScene = ({
     orbitRef.current?.update();
   }, [camera, cameraPreset]);
 
-  const frontVisible = readyRevision > 0;
-  const backVisible = readyRevision > 0;
+  const frontVisible =
+    readyRevision > 0 &&
+    artworkLayers.some((layer) => layer.visible && layer.targetRegion === "front");
+  const backVisible =
+    readyRevision > 0 &&
+    artworkLayers.some((layer) => layer.visible && layer.targetRegion === "back");
+
+  const overlayWidth = modelPlacement.size.x * 0.48;
+  const overlayHeight = modelPlacement.size.y * 0.54;
+  const overlayDepth = Math.max(modelPlacement.size.z * 0.28, 0.24);
+  const overlayY = modelPlacement.size.y * 0.57;
 
   return (
     <>
@@ -148,39 +147,29 @@ export const ViewerScene = ({
         position={modelPlacement.position}
       >
         <primitive object={modelScene} />
-        {targetMesh && frontVisible && (
-          <Decal
-            mesh={targetMesh}
-            position={[0, modelPlacement.size.y * 0.56, modelPlacement.size.z * 0.18]}
-            rotation={[0, 0, 0]}
-            scale={[modelPlacement.size.x * 0.56, modelPlacement.size.y * 0.62, modelPlacement.size.z * 0.45]}
-          >
+        {frontVisible && (
+          <mesh position={[0, overlayY, overlayDepth]} rotation={[0, 0, 0]}>
+            <planeGeometry args={[overlayWidth, overlayHeight]} />
             <meshStandardMaterial
               map={textures.front}
               transparent
-              depthTest
+              alphaTest={0.02}
+              side={THREE.DoubleSide}
               depthWrite={false}
-              polygonOffset
-              polygonOffsetFactor={-1}
             />
-          </Decal>
+          </mesh>
         )}
-        {targetMesh && backVisible && (
-          <Decal
-            mesh={targetMesh}
-            position={[0, modelPlacement.size.y * 0.57, -modelPlacement.size.z * 0.2]}
-            rotation={[0, Math.PI, 0]}
-            scale={[modelPlacement.size.x * 0.56, modelPlacement.size.y * 0.64, modelPlacement.size.z * 0.45]}
-          >
+        {backVisible && (
+          <mesh position={[0, overlayY, -overlayDepth]} rotation={[0, Math.PI, 0]}>
+            <planeGeometry args={[overlayWidth, overlayHeight]} />
             <meshStandardMaterial
               map={textures.back}
               transparent
-              depthTest
+              alphaTest={0.02}
+              side={THREE.DoubleSide}
               depthWrite={false}
-              polygonOffset
-              polygonOffsetFactor={-1}
             />
-          </Decal>
+          </mesh>
         )}
       </group>
 
