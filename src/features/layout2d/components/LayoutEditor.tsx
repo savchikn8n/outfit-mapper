@@ -8,6 +8,7 @@ import { ArtworkNode } from "./ArtworkNode";
 
 interface LayoutEditorProps {
   layers: ArtworkLayer[];
+  activeRegion: "front" | "back" | "leftSleeve" | "rightSleeve" | "all";
   selectedLayerId: string | null;
   onSelectLayer: (id: string | null) => void;
   onChangeLayer: (id: string, patch: Partial<ArtworkLayer>) => void;
@@ -18,6 +19,7 @@ const stagePadding = 32;
 
 export const LayoutEditor = ({
   layers,
+  activeRegion,
   selectedLayerId,
   onSelectLayer,
   onChangeLayer,
@@ -73,9 +75,45 @@ export const LayoutEditor = ({
   }, [selectedLayerId, layers]);
 
   const scale = Math.min(
-    (stageSize.width - stagePadding) / LAYOUT_WIDTH,
-    (stageSize.height - stagePadding) / LAYOUT_HEIGHT
+    (stageSize.width - stagePadding) /
+      (activeRegion === "all"
+        ? LAYOUT_WIDTH
+        : (layoutRegions.find((region) => region.id === activeRegion)?.width ?? LAYOUT_WIDTH) + 120),
+    (stageSize.height - stagePadding) /
+      (activeRegion === "all"
+        ? LAYOUT_HEIGHT
+        : (layoutRegions.find((region) => region.id === activeRegion)?.height ?? LAYOUT_HEIGHT) + 120)
   );
+
+  const visibleRegions =
+    activeRegion === "all"
+      ? layoutRegions
+      : layoutRegions.filter((region) => region.id === activeRegion);
+
+  const regionBounds =
+    activeRegion === "all"
+      ? { x: 0, y: 0, width: LAYOUT_WIDTH, height: LAYOUT_HEIGHT }
+      : (() => {
+          const region = layoutRegions.find((entry) => entry.id === activeRegion);
+          if (!region) {
+            return { x: 0, y: 0, width: LAYOUT_WIDTH, height: LAYOUT_HEIGHT };
+          }
+          return {
+            x: Math.max(0, region.x - 60),
+            y: Math.max(0, region.y - 60),
+            width: Math.min(LAYOUT_WIDTH, region.width + 120),
+            height: Math.min(LAYOUT_HEIGHT, region.height + 120)
+          };
+        })();
+
+  const offsetX =
+    stagePadding / 2 -
+    regionBounds.x * scale +
+    (stageSize.width - stagePadding - regionBounds.width * scale) / 2;
+  const offsetY =
+    stagePadding / 2 -
+    regionBounds.y * scale +
+    (stageSize.height - stagePadding - regionBounds.height * scale) / 2;
 
   return (
     <div className="layout-stage-shell" ref={containerRef}>
@@ -89,7 +127,7 @@ export const LayoutEditor = ({
           }
         }}
       >
-        <Layer scaleX={scale} scaleY={scale} x={stagePadding / 2} y={stagePadding / 2}>
+        <Layer scaleX={scale} scaleY={scale} x={offsetX} y={offsetY}>
           <Rect
             x={0}
             y={0}
@@ -99,7 +137,7 @@ export const LayoutEditor = ({
             cornerRadius={24}
           />
 
-          {layoutRegions.map((region) => (
+          {visibleRegions.map((region) => (
             <Group key={region.id}>
               <Rect
                 x={region.x}
@@ -158,11 +196,11 @@ export const LayoutEditor = ({
       </Stage>
 
       {selectedLayer && stageRef.current && (
-          <LayoutEditorBindings
-            stage={stageRef.current}
-            layer={selectedLayer}
-            onChangeLayer={onChangeLayer}
-          />
+        <LayoutEditorBindings
+          stage={stageRef.current}
+          layer={selectedLayer}
+          onChangeLayer={onChangeLayer}
+        />
       )}
     </div>
   );

@@ -28,9 +28,12 @@ type TranslationKey =
   | "language.english"
   | "language.russian"
   | "viewer.title"
+  | "viewer.controls"
+  | "viewer.loadingModel"
   | "viewer.liveTextureRevision"
   | "viewer.placeholderNote"
   | "editor.title"
+  | "editor.region"
   | "editor.subtitle"
   | "editor.allRegions"
   | "avatar.title"
@@ -106,10 +109,13 @@ const translations: Record<UiLanguage, Record<TranslationKey, string>> = {
     "language.english": "English",
     "language.russian": "Russian",
     "viewer.title": "3D Preview",
+    "viewer.controls": "Viewer controls",
+    "viewer.loadingModel": "Loading model",
     "viewer.liveTextureRevision": "Live texture revision",
     "viewer.placeholderNote":
       "GLB avatar preview is active. Artwork is remapped into rough shirt UV zones with a dark-fabric mask hack, so front/back work for MVP but are not yet print-accurate.",
     "editor.title": "2D UV Layout",
+    "editor.region": "Area",
     "editor.subtitle": "Front, back, and sleeve regions",
     "editor.allRegions": "All regions",
     "avatar.title": "Avatar",
@@ -184,10 +190,13 @@ const translations: Record<UiLanguage, Record<TranslationKey, string>> = {
     "language.english": "English",
     "language.russian": "Русский",
     "viewer.title": "3D-превью",
+    "viewer.controls": "Управление превью",
+    "viewer.loadingModel": "Загрузка модели",
     "viewer.liveTextureRevision": "Версия live-текстуры",
     "viewer.placeholderNote":
       "Сейчас активен GLB-аватар. Дизайн грубо перекладывается в UV-зоны футболки через маску темной ткани, поэтому front/back уже работают для MVP, но еще не дают полиграфической точности.",
     "editor.title": "2D UV-макет",
+    "editor.region": "Область",
     "editor.subtitle": "Перед, спина и зоны рукавов",
     "editor.allRegions": "Все области",
     "avatar.title": "Аватар",

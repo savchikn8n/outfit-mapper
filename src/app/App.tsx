@@ -17,6 +17,7 @@ import {
   persistProjectLocally
 } from "../features/projects/persistence";
 import { ViewerPanel } from "../features/viewer3d/components/ViewerPanel";
+import { ViewerControls } from "../features/viewer3d/components/ViewerControls";
 import { useProjectStore } from "../store/projectStore";
 import { TargetRegion } from "../types/app";
 import { readFileAsDataUrl } from "../utils/image";
@@ -56,23 +57,23 @@ const AppContent = () => {
   const [accept, setAccept] = useState(".png,.jpg,.jpeg,.svg");
   const [activeRegion, setActiveRegion] = useState<EditorRegion>("front");
 
-  const selectedLayer = useMemo(
-    () => project.artworkLayers.find((layer) => layer.id === selectedLayerId) ?? null,
-    [project.artworkLayers, selectedLayerId]
-  );
-
-  const { textureCanvas, textureReadyRevision } = useTextureComposer(
-    project.artworkLayers,
-    project.sceneSettings.shirtBaseColor,
-    textureRevision
-  );
-
   const visibleEditorLayers = useMemo(
     () =>
       activeRegion === "all"
         ? project.artworkLayers
         : project.artworkLayers.filter((layer) => layer.targetRegion === activeRegion),
     [activeRegion, project.artworkLayers]
+  );
+
+  const selectedLayer = useMemo(
+    () => visibleEditorLayers.find((layer) => layer.id === selectedLayerId) ?? null,
+    [visibleEditorLayers, selectedLayerId]
+  );
+
+  const { textureCanvas, textureReadyRevision } = useTextureComposer(
+    project.artworkLayers,
+    project.sceneSettings.shirtBaseColor,
+    textureRevision
   );
 
   const triggerImport = (types: string) => {
@@ -161,9 +162,6 @@ const AppContent = () => {
     <div className="app-shell">
       <Toolbar
         language={project.sceneSettings.language}
-        backgroundColor={project.sceneSettings.backgroundColor}
-        shirtBaseColor={project.sceneSettings.shirtBaseColor}
-        wireframe={project.sceneSettings.wireframe}
         onNewProject={onNewProject}
         onOpenProject={openProject}
         onSaveProject={saveProject}
@@ -172,10 +170,6 @@ const AppContent = () => {
         onExportViewer={exportViewer}
         onExportLayout={exportLayout}
         onExportProject={exportProject}
-        onCameraPreset={setCameraPreset}
-        onBackgroundColor={setBackgroundColor}
-        onShirtBaseColor={setShirtBaseColor}
-        onToggleWireframe={toggleWireframe}
         onLanguageChange={setLanguage}
       />
 
@@ -198,6 +192,15 @@ const AppContent = () => {
             cameraPreset={project.sceneSettings.cameraPreset}
             onViewportReady={onViewportReady}
           />
+          <ViewerControls
+            backgroundColor={project.sceneSettings.backgroundColor}
+            shirtBaseColor={project.sceneSettings.shirtBaseColor}
+            wireframe={project.sceneSettings.wireframe}
+            onCameraPreset={setCameraPreset}
+            onBackgroundColor={setBackgroundColor}
+            onShirtBaseColor={setShirtBaseColor}
+            onToggleWireframe={toggleWireframe}
+          />
           <AvatarPanel
             selectedPreset={project.sceneSettings.mannequinPreset}
             selectedGender={project.sceneSettings.avatarGender}
@@ -211,29 +214,29 @@ const AppContent = () => {
             <h2>{t("editor.title")}</h2>
             <span>{t("editor.subtitle")}</span>
           </div>
-          <div className="region-tabs">
-            {(["front", "back", "leftSleeve", "rightSleeve", "all"] as EditorRegion[]).map(
-              (region) => (
-                <button
-                  key={region}
-                  type="button"
-                  className={activeRegion === region ? "is-active" : ""}
-                  onClick={() => {
-                    setActiveRegion(region);
-                    selectLayer(null);
-                  }}
-                >
-                  {region === "all"
-                    ? t("editor.allRegions")
-                    : t(`region.${region}` as "region.front")}
-                </button>
-              )
-            )}
+          <div className="editor-region-bar panel-card">
+            <label>
+              {t("editor.region")}
+              <select
+                value={activeRegion}
+                onChange={(event) => {
+                  setActiveRegion(event.target.value as EditorRegion);
+                  selectLayer(null);
+                }}
+              >
+                <option value="front">{t("region.front")}</option>
+                <option value="back">{t("region.back")}</option>
+                <option value="leftSleeve">{t("region.leftSleeve")}</option>
+                <option value="rightSleeve">{t("region.rightSleeve")}</option>
+                <option value="all">{t("editor.allRegions")}</option>
+              </select>
+            </label>
           </div>
           <div className="editor-grid">
             <div className="editor-grid__canvas">
               <LayoutEditor
                 layers={visibleEditorLayers}
+                activeRegion={activeRegion}
                 selectedLayerId={selectedLayerId}
                 onSelectLayer={selectLayer}
                 onChangeLayer={updateLayer}
@@ -242,7 +245,7 @@ const AppContent = () => {
                 }}
               />
             </div>
-            <div className="editor-grid__sidebar">
+            <div className="editor-stack">
               <LayerList
                 layers={visibleEditorLayers}
                 selectedLayerId={selectedLayerId}

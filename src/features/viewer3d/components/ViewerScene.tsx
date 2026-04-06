@@ -123,8 +123,17 @@ export const ViewerScene = ({
         return;
       }
 
+      const sourceMaterial = Array.isArray(object.material)
+        ? object.material[0]
+        : object.material;
+      const fallbackMap =
+        sourceMaterial instanceof THREE.MeshStandardMaterial ||
+        sourceMaterial instanceof THREE.MeshBasicMaterial
+          ? sourceMaterial.map ?? null
+          : null;
+
       object.material = new THREE.MeshStandardMaterial({
-        map: canvasTexture,
+        map: textureReadyRevision > 0 ? canvasTexture : fallbackMap,
         color: new THREE.Color("#ffffff"),
         roughness: 0.96,
         metalness: 0,

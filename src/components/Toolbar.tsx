@@ -1,11 +1,8 @@
-import { CameraPreset, UiLanguage } from "../types/app";
+import { UiLanguage } from "../types/app";
 import { useI18n } from "../app/i18n";
 
 interface ToolbarProps {
   language: UiLanguage;
-  backgroundColor: string;
-  shirtBaseColor: string;
-  wireframe: boolean;
   onNewProject: () => void;
   onOpenProject: () => void;
   onSaveProject: () => void;
@@ -14,18 +11,11 @@ interface ToolbarProps {
   onExportViewer: () => void;
   onExportLayout: () => void;
   onExportProject: () => void;
-  onCameraPreset: (preset: CameraPreset) => void;
-  onBackgroundColor: (color: string) => void;
-  onShirtBaseColor: (color: string) => void;
-  onToggleWireframe: () => void;
   onLanguageChange: (language: UiLanguage) => void;
 }
 
 export const Toolbar = ({
   language,
-  backgroundColor,
-  shirtBaseColor,
-  wireframe,
   onNewProject,
   onOpenProject,
   onSaveProject,
@@ -34,10 +24,6 @@ export const Toolbar = ({
   onExportViewer,
   onExportLayout,
   onExportProject,
-  onCameraPreset,
-  onBackgroundColor,
-  onShirtBaseColor,
-  onToggleWireframe,
   onLanguageChange
 }: ToolbarProps) => {
   const { t } = useI18n();
@@ -64,45 +50,7 @@ export const Toolbar = ({
         {t("toolbar.importSvg")}
       </button>
     </div>
-
-    <div className="toolbar__group">
-      <button type="button" onClick={() => onCameraPreset("front")}>
-        {t("toolbar.front")}
-      </button>
-      <button type="button" onClick={() => onCameraPreset("back")}>
-        {t("toolbar.back")}
-      </button>
-      <button type="button" onClick={() => onCameraPreset("left")}>
-        {t("toolbar.left")}
-      </button>
-      <button type="button" onClick={() => onCameraPreset("right")}>
-        {t("toolbar.right")}
-      </button>
-      <button type="button" onClick={() => onCameraPreset("perspective")}>
-        {t("toolbar.perspective")}
-      </button>
-    </div>
-
     <div className="toolbar__group toolbar__group--controls">
-      <label>
-        {t("toolbar.viewport")}
-        <input
-          type="color"
-          value={backgroundColor}
-          onChange={(event) => onBackgroundColor(event.target.value)}
-        />
-      </label>
-      <label>
-        {t("toolbar.shirt")}
-        <input
-          type="color"
-          value={shirtBaseColor}
-          onChange={(event) => onShirtBaseColor(event.target.value)}
-        />
-      </label>
-      <button type="button" onClick={onToggleWireframe} className={wireframe ? "is-active" : ""}>
-        {t("toolbar.wireframe")}
-      </button>
       <label>
         {t("toolbar.language")}
         <select value={language} onChange={(event) => onLanguageChange(event.target.value as UiLanguage)}>

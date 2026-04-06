@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { Html, useProgress } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import {
   ArtworkLayer,
@@ -31,9 +33,30 @@ export const ViewerPanel = (props: ViewerPanelProps) => {
         dpr={[1, 2]}
         gl={{ preserveDrawingBuffer: true, antialias: true }}
       >
-        <ViewerScene {...props} />
+        <Suspense fallback={<ViewerLoader label={t("viewer.loadingModel")} />}>
+          <ViewerScene {...props} />
+        </Suspense>
       </Canvas>
       <div className="viewer-note">{t("viewer.placeholderNote")}</div>
     </div>
+  );
+};
+
+const ViewerLoader = ({ label }: { label: string }) => {
+  const { progress } = useProgress();
+
+  return (
+    <Html center>
+      <div className="viewer-loader">
+        <span>{label}</span>
+        <div className="viewer-loader__track">
+          <div
+            className="viewer-loader__bar"
+            style={{ width: `${Math.max(8, Math.round(progress))}%` }}
+          />
+        </div>
+        <strong>{Math.round(progress)}%</strong>
+      </div>
+    </Html>
   );
 };
