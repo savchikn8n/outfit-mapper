@@ -20,7 +20,7 @@ import { ViewerPanel } from "../features/viewer3d/components/ViewerPanel";
 import { ViewerControls } from "../features/viewer3d/components/ViewerControls";
 import { useProjectStore } from "../store/projectStore";
 import { TargetRegion } from "../types/app";
-import { readFileAsDataUrl } from "../utils/image";
+import { fitImageToBounds, loadImageElement, readFileAsDataUrl } from "../utils/image";
 
 type EditorRegion = TargetRegion | "all";
 
@@ -96,12 +96,21 @@ const AppContent = () => {
     }
 
     const source = await readFileAsDataUrl(file);
+    let fittedSize: { width: number; height: number } | undefined;
+    try {
+      const image = await loadImageElement(source);
+      fittedSize = fitImageToBounds(image.naturalWidth, image.naturalHeight, 240, 300);
+    } catch {
+      fittedSize = undefined;
+    }
     const extension = file.name.split(".").pop()?.toLowerCase();
     importArtwork({
       source,
       name: file.name,
       type: extension === "svg" ? "svg" : "png",
-      targetRegion: activeRegion === "all" ? "front" : activeRegion
+      targetRegion: activeRegion === "all" ? "front" : activeRegion,
+      width: fittedSize?.width,
+      height: fittedSize?.height
     });
 
     if (activeRegion === "front" || activeRegion === "back") {

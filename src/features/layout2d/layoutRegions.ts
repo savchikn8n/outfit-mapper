@@ -6,18 +6,18 @@ export const LAYOUT_HEIGHT = 900;
 export const layoutRegions: RegionDefinition[] = [
   {
     id: "front",
-    x: 120,
-    y: 80,
-    width: 280,
-    height: 420,
+    x: 90,
+    y: 64,
+    width: 340,
+    height: 510,
     color: "#1c2c3a"
   },
   {
     id: "back",
-    x: 520,
-    y: 80,
-    width: 280,
-    height: 420,
+    x: 500,
+    y: 64,
+    width: 340,
+    height: 510,
     color: "#2b2439"
   },
   {

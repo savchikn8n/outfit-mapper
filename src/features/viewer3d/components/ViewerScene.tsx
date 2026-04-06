@@ -11,6 +11,7 @@ import {
 } from "../../../types/app";
 import { MODEL_URL } from "../modelHackConfig";
 import { useDecalTextures } from "../hooks/useDecalTextures";
+import { layoutRegions } from "../../layout2d/layoutRegions";
 
 interface ViewerSceneProps {
   artworkLayers: ArtworkLayer[];
@@ -149,14 +150,16 @@ export const ViewerScene = ({
     readyRevision > 0 &&
     artworkLayers.some((layer) => layer.visible && layer.targetRegion === "back");
 
-  const overlayWidth = modelPlacement.size.z * 0.46 * preset.shirtScale[0];
-  const overlayHeight = modelPlacement.size.y * 0.32 * preset.shirtScale[1];
+  const frontRegion = layoutRegions.find((region) => region.id === "front") ?? layoutRegions[0];
+  const overlayAspect = frontRegion.height / frontRegion.width;
+  const overlayWidth = modelPlacement.size.z * 0.54 * preset.shirtScale[0];
+  const overlayHeight = overlayWidth * overlayAspect;
   const overlayZ = modelPlacement.center.z;
-  const overlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.48;
+  const overlayY = modelPlacement.box.min.y + modelPlacement.size.y * 0.5;
   const frontOverlayX =
-    modelPlacement.box.max.x + modelPlacement.size.x * 0.012 * preset.shirtScale[2];
+    modelPlacement.box.max.x + modelPlacement.size.x * 0.004 * preset.shirtScale[2];
   const backOverlayX =
-    modelPlacement.box.min.x - modelPlacement.size.x * 0.012 * preset.shirtScale[2];
+    modelPlacement.box.min.x - modelPlacement.size.x * 0.004 * preset.shirtScale[2];
   const overlayCurveDepth = modelPlacement.size.x * 0.035;
 
   const frontGeometry = useMemo(

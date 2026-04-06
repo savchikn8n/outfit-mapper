@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { ArtworkLayer, TargetRegion } from "../../../types/app";
-import { layoutRegions, traceRegionShape } from "../../layout2d/layoutRegions";
+import { layoutRegions } from "../../layout2d/layoutRegions";
 import { loadImageElement } from "../../../utils/image";
 
 const imageCache = new Map<string, Promise<HTMLImageElement>>();
@@ -34,11 +34,6 @@ const createRegionCanvas = async (regionId: TargetRegion, layers: ArtworkLayer[]
   const scaleX = canvas.width / region.width;
   const scaleY = canvas.height / region.height;
 
-  context.save();
-  context.scale(scaleX, scaleY);
-  traceRegionShape(context, { ...region, x: 0, y: 0 });
-  context.clip();
-
   const regionLayers = layers
     .filter((layer) => layer.visible && layer.targetRegion === regionId)
     .sort((left, right) => left.zIndex - right.zIndex);
@@ -48,16 +43,23 @@ const createRegionCanvas = async (regionId: TargetRegion, layers: ArtworkLayer[]
       const image = await getCachedImage(layer.source);
       context.save();
       context.globalAlpha = layer.opacity;
-      context.translate(layer.x - region.x + layer.width / 2, layer.y - region.y + layer.height / 2);
+      context.translate(
+        (layer.x - region.x + layer.width / 2) * scaleX,
+        (layer.y - region.y + layer.height / 2) * scaleY
+      );
       context.rotate((layer.rotation * Math.PI) / 180);
-      context.drawImage(image, -layer.width / 2, -layer.height / 2, layer.width, layer.height);
+      context.drawImage(
+        image,
+        (-layer.width / 2) * scaleX,
+        (-layer.height / 2) * scaleY,
+        layer.width * scaleX,
+        layer.height * scaleY
+      );
       context.restore();
     } catch {
       // Ignore bad assets for MVP stability.
     }
   }
-
-  context.restore();
   return canvas;
 };
 

@@ -22,6 +22,8 @@ interface ProjectStore {
     name: string;
     type: ArtworkLayer["type"];
     targetRegion: TargetRegion;
+    width?: number;
+    height?: number;
   }) => void;
   selectLayer: (id: string | null) => void;
   updateLayer: (id: string, patch: Partial<ArtworkLayer>) => void;
@@ -62,10 +64,25 @@ const touch = (project: ProjectData): ProjectData => ({
 });
 
 const layerDefaultsByRegion: Record<TargetRegion, Pick<ArtworkLayer, "x" | "y" | "width" | "height">> = {
-  front: { x: 180, y: 180, width: 180, height: 180 },
-  back: { x: 580, y: 180, width: 180, height: 180 },
+  front: { x: 150, y: 190, width: 220, height: 260 },
+  back: { x: 560, y: 190, width: 220, height: 260 },
   leftSleeve: { x: 90, y: 590, width: 120, height: 120 },
   rightSleeve: { x: 470, y: 590, width: 120, height: 120 }
+};
+
+const centeredLayerPositionByRegion = (
+  region: TargetRegion,
+  width: number,
+  height: number
+) => {
+  const defaults = layerDefaultsByRegion[region];
+  const centerX = defaults.x + defaults.width / 2;
+  const centerY = defaults.y + defaults.height / 2;
+
+  return {
+    x: Math.round(centerX - width / 2),
+    y: Math.round(centerY - height / 2)
+  };
 };
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
@@ -73,8 +90,12 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   selectedLayerId: null,
   textureRevision: 0,
   statusMessage: { key: "ready" },
-  importArtwork: ({ source, name, type, targetRegion }) => {
+  importArtwork: ({ source, name, type, targetRegion, width, height }) => {
     const project = get().project;
+    const defaults = layerDefaultsByRegion[targetRegion];
+    const nextWidth = width ?? defaults.width;
+    const nextHeight = height ?? defaults.height;
+    const position = centeredLayerPositionByRegion(targetRegion, nextWidth, nextHeight);
     const layer: ArtworkLayer = {
       id: createId("layer"),
       name,
@@ -86,7 +107,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       locked: false,
       visible: true,
       targetRegion,
-      ...layerDefaultsByRegion[targetRegion]
+      width: nextWidth,
+      height: nextHeight,
+      ...position
     };
 
     set({
