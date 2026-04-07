@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef } from "react";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
 import { avatarPresets } from "../../avatar/presets";
 import {
   ArtworkLayer,
@@ -36,20 +35,41 @@ const cameraPositions: Record<CameraPreset, [number, number, number]> = {
 
 const decalConfig = {
   front: {
-    width: 0.54,
-    depth: 0.2,
-    xOffset: 0.08,
+    width: 0.42,
+    xOffset: 0.008,
     yOffset: 0.5,
-    zOffset: -0.01
+    zOffset: 0,
+    curve: 0.024
   },
   back: {
-    width: 0.62,
-    depth: 0.22,
-    xOffset: 0.08,
+    width: 0.46,
+    xOffset: 0.01,
     yOffset: 0.52,
-    zOffset: 0
+    zOffset: 0,
+    curve: 0.02
   }
 } as const;
+
+const createCurvedOverlayGeometry = (
+  width: number,
+  height: number,
+  curveDepth: number
+) => {
+  const geometry = new THREE.PlaneGeometry(width, height, 40, 24);
+  const position = geometry.attributes.position;
+  const halfWidth = width / 2;
+
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index);
+    const normalized = halfWidth === 0 ? 0 : x / halfWidth;
+    const bow = Math.cos(normalized * (Math.PI / 2)) * curveDepth;
+    position.setZ(index, bow);
+  }
+
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
+};
 
 export const ViewerScene = ({
   artworkLayers,
@@ -124,16 +144,6 @@ export const ViewerScene = ({
     };
   }, [modelScene]);
 
-  const targetMesh = useMemo(() => {
-    let mesh: THREE.Mesh | null = null;
-    modelScene.traverse((object) => {
-      if (!mesh && object instanceof THREE.Mesh) {
-        mesh = object;
-      }
-    });
-    return mesh;
-  }, [modelScene]);
-
   useEffect(() => {
     onViewportReady(gl.domElement);
   }, [gl.domElement, onViewportReady]);
@@ -159,24 +169,47 @@ export const ViewerScene = ({
 
   const frontRegion = layoutRegions.find((region) => region.id === "front") ?? layoutRegions[0];
   const overlayAspect = frontRegion.height / frontRegion.width;
-  const frontScale: [number, number, number] = [
-    modelPlacement.size.z * decalConfig.front.width * preset.shirtScale[0],
-    modelPlacement.size.z * decalConfig.front.width * overlayAspect * preset.shirtScale[1],
-    Math.max(modelPlacement.size.x * decalConfig.front.depth, 0.16)
-  ];
-  const backScale: [number, number, number] = [
-    modelPlacement.size.z * decalConfig.back.width * preset.shirtScale[0],
-    modelPlacement.size.z * decalConfig.back.width * overlayAspect * preset.shirtScale[1],
-    Math.max(modelPlacement.size.x * decalConfig.back.depth, 0.18)
-  ];
+  const frontWidth = modelPlacement.size.z * decalConfig.front.width * preset.shirtScale[0];
+  const frontHeight = frontWidth * overlayAspect;
+  const backWidth = modelPlacement.size.z * decalConfig.back.width * preset.shirtScale[0];
+  const backHeight = backWidth * overlayAspect;
   const frontOverlayZ = modelPlacement.center.z + modelPlacement.size.z * decalConfig.front.zOffset;
   const backOverlayZ = modelPlacement.center.z + modelPlacement.size.z * decalConfig.back.zOffset;
   const frontOverlayY =
     modelPlacement.box.min.y + modelPlacement.size.y * decalConfig.front.yOffset;
   const backOverlayY =
     modelPlacement.box.min.y + modelPlacement.size.y * decalConfig.back.yOffset;
-  const frontOverlayX = modelPlacement.box.max.x + frontScale[2] * decalConfig.front.xOffset;
-  const backOverlayX = modelPlacement.box.min.x - backScale[2] * decalConfig.back.xOffset;
+  const frontOverlayX =
+    modelPlacement.box.max.x + modelPlacement.size.x * decalConfig.front.xOffset;
+  const backOverlayX =
+    modelPlacement.box.min.x - modelPlacement.size.x * decalConfig.back.xOffset;
+
+  const frontGeometry = useMemo(
+    () =>
+      createCurvedOverlayGeometry(
+        frontWidth,
+        frontHeight,
+        modelPlacement.size.x * decalConfig.front.curve
+      ),
+    [frontHeight, frontWidth, modelPlacement.size.x]
+  );
+  const backGeometry = useMemo(
+    () =>
+      createCurvedOverlayGeometry(
+        backWidth,
+        backHeight,
+        modelPlacement.size.x * decalConfig.back.curve
+      ),
+    [backHeight, backWidth, modelPlacement.size.x]
+  );
+
+  useEffect(
+    () => () => {
+      frontGeometry.dispose();
+      backGeometry.dispose();
+    },
+    [backGeometry, frontGeometry]
+  );
 
   return (
     <>
@@ -193,23 +226,45 @@ export const ViewerScene = ({
         position={modelPlacement.position}
       >
         <primitive object={modelScene} />
-        {targetMesh && frontVisible && (
-          <ProjectedDecal
-            mesh={targetMesh}
-            texture={textures.front}
+        {frontVisible && (
+          <mesh
+            geometry={frontGeometry}
             position={[frontOverlayX, frontOverlayY, frontOverlayZ]}
-            rotation={[0, -Math.PI / 2, 0]}
-            scale={frontScale}
-          />
-        )}
-        {targetMesh && backVisible && (
-          <ProjectedDecal
-            mesh={targetMesh}
-            texture={textures.back}
-            position={[backOverlayX, backOverlayY, backOverlayZ]}
             rotation={[0, Math.PI / 2, 0]}
-            scale={backScale}
-          />
+            renderOrder={10}
+          >
+            <meshBasicMaterial
+              map={textures.front}
+              transparent
+              alphaTest={0.01}
+              side={THREE.FrontSide}
+              depthTest
+              depthWrite={false}
+              toneMapped={false}
+              polygonOffset
+              polygonOffsetFactor={-4}
+            />
+          </mesh>
+        )}
+        {backVisible && (
+          <mesh
+            geometry={backGeometry}
+            position={[backOverlayX, backOverlayY, backOverlayZ]}
+            rotation={[0, -Math.PI / 2, 0]}
+            renderOrder={10}
+          >
+            <meshBasicMaterial
+              map={textures.back}
+              transparent
+              alphaTest={0.01}
+              side={THREE.FrontSide}
+              depthTest
+              depthWrite={false}
+              toneMapped={false}
+              polygonOffset
+              polygonOffsetFactor={-4}
+            />
+          </mesh>
         )}
       </group>
 
@@ -230,59 +285,3 @@ export const ViewerScene = ({
 };
 
 useGLTF.preload(MODEL_URL);
-
-interface ProjectedDecalProps {
-  mesh: THREE.Mesh;
-  texture: THREE.Texture;
-  position: [number, number, number];
-  rotation: [number, number, number];
-  scale: [number, number, number];
-}
-
-const ProjectedDecal = ({
-  mesh,
-  texture,
-  position,
-  rotation,
-  scale
-}: ProjectedDecalProps) => {
-  const geometry = useMemo(() => {
-    try {
-      return new DecalGeometry(
-        mesh,
-        new THREE.Vector3(...position),
-        new THREE.Euler(...rotation),
-        new THREE.Vector3(...scale)
-      );
-    } catch (error) {
-      console.error("Decal projection failed", error);
-      return null;
-    }
-  }, [mesh, position, rotation, scale]);
-
-  useEffect(
-    () => () => {
-      geometry?.dispose();
-    },
-    [geometry]
-  );
-
-  if (!geometry) {
-    return null;
-  }
-
-  return (
-    <mesh geometry={geometry} renderOrder={10}>
-      <meshBasicMaterial
-        map={texture}
-        transparent
-        alphaTest={0.01}
-        depthTest
-        depthWrite={false}
-        toneMapped={false}
-        polygonOffset
-        polygonOffsetFactor={-4}
-      />
-    </mesh>
-  );
-};
