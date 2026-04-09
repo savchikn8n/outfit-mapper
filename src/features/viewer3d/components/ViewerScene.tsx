@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
 import { avatarPresets } from "../../avatar/presets";
 import {
   ArtworkLayer,
@@ -10,7 +11,7 @@ import {
   MannequinPresetId
 } from "../../../types/app";
 import { MODEL_URL } from "../modelHackConfig";
-import { useTextureComposer } from "../../layout2d/hooks/useTextureComposer";
+import { useRegionTextures } from "../hooks/useRegionTextures";
 
 interface ViewerSceneProps {
   artworkLayers: ArtworkLayer[];
@@ -46,6 +47,69 @@ const isSupportedShirtMaterial = (
   material instanceof THREE.MeshLambertMaterial ||
   material instanceof THREE.MeshBasicMaterial;
 
+interface ProjectedDecalProps {
+  targetMesh: THREE.Mesh;
+  texture: THREE.Texture;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  size: [number, number, number];
+  visible: boolean;
+}
+
+const ProjectedDecal = ({
+  targetMesh,
+  texture,
+  position,
+  rotation,
+  size,
+  visible
+}: ProjectedDecalProps) => {
+  const geometry = useMemo(() => {
+    if (!visible) {
+      return null;
+    }
+
+    try {
+      targetMesh.updateMatrixWorld(true);
+      return new DecalGeometry(
+        targetMesh,
+        new THREE.Vector3(...position),
+        new THREE.Euler(...rotation),
+        new THREE.Vector3(...size)
+      );
+    } catch {
+      return null;
+    }
+  }, [position, rotation, size, targetMesh, visible]);
+
+  useEffect(
+    () => () => {
+      geometry?.dispose();
+    },
+    [geometry]
+  );
+
+  if (!geometry || !visible) {
+    return null;
+  }
+
+  return (
+    <mesh geometry={geometry} renderOrder={10}>
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        alphaTest={0.02}
+        side={THREE.FrontSide}
+        depthTest
+        depthWrite={false}
+        toneMapped={false}
+        polygonOffset
+        polygonOffsetFactor={-2}
+      />
+    </mesh>
+  );
+};
+
 export const ViewerScene = ({
   artworkLayers,
   textureRevision,
@@ -74,18 +138,7 @@ export const ViewerScene = ({
     [avatarGender]
   );
 
-  const { textureCanvas, textureReadyRevision } = useTextureComposer(
-    artworkLayers,
-    shirtBaseColor,
-    textureRevision
-  );
-
-  const shirtTexture = useMemo(() => {
-    const texture = new THREE.CanvasTexture(textureCanvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.flipY = false;
-    return texture;
-  }, [textureCanvas]);
+  const { textures, readyRevision } = useRegionTextures(artworkLayers, textureRevision);
 
   const modelScene = useMemo(() => {
     const clone = gltf.scene.clone(true);
@@ -105,7 +158,17 @@ export const ViewerScene = ({
       } else {
         object.material = object.material.clone();
       }
+
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        if (isSupportedShirtMaterial(material) && material.map) {
+          material.map.colorSpace = THREE.SRGBColorSpace;
+          material.map.needsUpdate = true;
+        }
+      }
     });
+
+    clone.updateMatrixWorld(true);
     return clone;
   }, [gltf.scene]);
 
@@ -135,10 +198,6 @@ export const ViewerScene = ({
   }, [gl.domElement, onViewportReady]);
 
   useEffect(() => {
-    shirtTexture.needsUpdate = true;
-  }, [shirtTexture, textureReadyRevision]);
-
-  useEffect(() => {
     scene.background = new THREE.Color(backgroundColor);
   }, [backgroundColor, scene]);
 
@@ -163,15 +222,15 @@ export const ViewerScene = ({
           continue;
         }
 
-        material.map = shirtTexture;
-        material.color.set("#ffffff");
-        material.side = THREE.FrontSide;
+        material.map = null;
+        material.color.set(shirtBaseColor);
+        material.side = THREE.DoubleSide;
         material.transparent = false;
         material.alphaTest = 0;
         material.needsUpdate = true;
       }
     });
-  }, [modelScene, shirtTexture, textureReadyRevision, wireframe]);
+  }, [modelScene, shirtBaseColor, wireframe]);
 
   useEffect(() => {
     const position = cameraPositions[cameraPreset];
@@ -180,6 +239,80 @@ export const ViewerScene = ({
     orbitRef.current?.target.set(0, 1.45, 0);
     orbitRef.current?.update();
   }, [camera, cameraPreset]);
+
+  const shirtMesh = useMemo<THREE.Mesh | null>(() => {
+    let found: THREE.Mesh | null = null;
+    modelScene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh) || found) {
+        return;
+      }
+
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      if (object.name === "Shirt" || materials.some((material) => material.name === "ShirtMaterial")) {
+        found = object;
+      }
+    });
+
+    return found;
+  }, [modelScene]);
+
+  const shirtBounds = useMemo(() => {
+    if (!shirtMesh) {
+      return null;
+    }
+
+    const resolvedShirtMesh = shirtMesh as THREE.Mesh;
+    resolvedShirtMesh.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(resolvedShirtMesh);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    return { box, size, center };
+  }, [shirtMesh]);
+
+  const frontVisible =
+    readyRevision > 0 &&
+    artworkLayers.some((layer) => layer.visible && layer.targetRegion === "front");
+  const backVisible =
+    readyRevision > 0 &&
+    artworkLayers.some((layer) => layer.visible && layer.targetRegion === "back");
+
+  const frontDecal = useMemo(() => {
+    if (!shirtBounds) {
+      return null;
+    }
+
+    const width = shirtBounds.size.z * 0.52;
+    const height = width * 1.45;
+    return {
+      position: [
+        shirtBounds.box.max.x + shirtBounds.size.x * 0.018,
+        shirtBounds.box.min.y + shirtBounds.size.y * 0.5,
+        shirtBounds.center.z
+      ] as [number, number, number],
+      rotation: [0, Math.PI / 2, 0] as [number, number, number],
+      size: [width, height, shirtBounds.size.x * 0.16] as [number, number, number]
+    };
+  }, [shirtBounds]);
+
+  const backDecal = useMemo(() => {
+    if (!shirtBounds) {
+      return null;
+    }
+
+    const width = shirtBounds.size.z * 0.56;
+    const height = width * 1.5;
+    return {
+      position: [
+        shirtBounds.box.min.x - shirtBounds.size.x * 0.018,
+        shirtBounds.box.min.y + shirtBounds.size.y * 0.53,
+        shirtBounds.center.z
+      ] as [number, number, number],
+      rotation: [0, -Math.PI / 2, 0] as [number, number, number],
+      size: [width, height, shirtBounds.size.x * 0.16] as [number, number, number]
+    };
+  }, [shirtBounds]);
 
   return (
     <>
@@ -196,6 +329,26 @@ export const ViewerScene = ({
         position={modelPlacement.position}
       >
         <primitive object={modelScene} />
+        {shirtMesh && frontDecal && (
+          <ProjectedDecal
+            targetMesh={shirtMesh}
+            texture={textures.front}
+            position={frontDecal.position}
+            rotation={frontDecal.rotation}
+            size={frontDecal.size}
+            visible={frontVisible}
+          />
+        )}
+        {shirtMesh && backDecal && (
+          <ProjectedDecal
+            targetMesh={shirtMesh}
+            texture={textures.back}
+            position={backDecal.position}
+            rotation={backDecal.rotation}
+            size={backDecal.size}
+            visible={backVisible}
+          />
+        )}
       </group>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0.02, 0]}>
