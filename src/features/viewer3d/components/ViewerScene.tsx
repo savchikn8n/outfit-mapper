@@ -10,8 +10,7 @@ import {
   MannequinPresetId
 } from "../../../types/app";
 import { MODEL_URL } from "../modelHackConfig";
-import { useDecalTextures } from "../hooks/useDecalTextures";
-import { layoutRegions } from "../../layout2d/layoutRegions";
+import { useTextureComposer } from "../../layout2d/hooks/useTextureComposer";
 
 interface ViewerSceneProps {
   artworkLayers: ArtworkLayer[];
@@ -33,47 +32,24 @@ const cameraPositions: Record<CameraPreset, [number, number, number]> = {
   perspective: [3.6, 2.2, 4.6]
 };
 
-const decalConfig = {
-  front: {
-    width: 0.42,
-    xOffset: 0.008,
-    yOffset: 0.5,
-    zOffset: 0,
-    curve: 0.024
-  },
-  back: {
-    width: 0.46,
-    xOffset: 0.01,
-    yOffset: 0.52,
-    zOffset: 0,
-    curve: 0.02
-  }
-} as const;
-
-const createCurvedOverlayGeometry = (
-  width: number,
-  height: number,
-  curveDepth: number
-) => {
-  const geometry = new THREE.PlaneGeometry(width, height, 40, 24);
-  const position = geometry.attributes.position;
-  const halfWidth = width / 2;
-
-  for (let index = 0; index < position.count; index += 1) {
-    const x = position.getX(index);
-    const normalized = halfWidth === 0 ? 0 : x / halfWidth;
-    const bow = Math.cos(normalized * (Math.PI / 2)) * curveDepth;
-    position.setZ(index, bow);
-  }
-
-  position.needsUpdate = true;
-  geometry.computeVertexNormals();
-  return geometry;
-};
+const isSupportedShirtMaterial = (
+  material: THREE.Material
+): material is
+  | THREE.MeshBasicMaterial
+  | THREE.MeshLambertMaterial
+  | THREE.MeshPhongMaterial
+  | THREE.MeshPhysicalMaterial
+  | THREE.MeshStandardMaterial =>
+  material instanceof THREE.MeshStandardMaterial ||
+  material instanceof THREE.MeshPhysicalMaterial ||
+  material instanceof THREE.MeshPhongMaterial ||
+  material instanceof THREE.MeshLambertMaterial ||
+  material instanceof THREE.MeshBasicMaterial;
 
 export const ViewerScene = ({
   artworkLayers,
   textureRevision,
+  shirtBaseColor,
   backgroundColor,
   wireframe,
   mannequinPreset,
@@ -98,7 +74,18 @@ export const ViewerScene = ({
     [avatarGender]
   );
 
-  const { textures, readyRevision } = useDecalTextures(artworkLayers, textureRevision);
+  const { textureCanvas, textureReadyRevision } = useTextureComposer(
+    artworkLayers,
+    shirtBaseColor,
+    textureRevision
+  );
+
+  const shirtTexture = useMemo(() => {
+    const texture = new THREE.CanvasTexture(textureCanvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.flipY = false;
+    return texture;
+  }, [textureCanvas]);
 
   const modelScene = useMemo(() => {
     const clone = gltf.scene.clone(true);
@@ -134,7 +121,6 @@ export const ViewerScene = ({
     return {
       scale,
       box,
-      size,
       center,
       position: [-center.x * scale, -box.min.y * scale, -center.z * scale] as [
         number,
@@ -149,8 +135,43 @@ export const ViewerScene = ({
   }, [gl.domElement, onViewportReady]);
 
   useEffect(() => {
+    shirtTexture.needsUpdate = true;
+  }, [shirtTexture, textureReadyRevision]);
+
+  useEffect(() => {
     scene.background = new THREE.Color(backgroundColor);
   }, [backgroundColor, scene]);
+
+  useEffect(() => {
+    modelScene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) {
+        return;
+      }
+
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      const isShirtMesh =
+        object.name === "Shirt" ||
+        materials.some((material) => material.name === "ShirtMaterial");
+
+      for (const material of materials) {
+        if ("wireframe" in material) {
+          material.wireframe = wireframe;
+        }
+
+        if (!isShirtMesh || !isSupportedShirtMaterial(material)) {
+          material.needsUpdate = true;
+          continue;
+        }
+
+        material.map = shirtTexture;
+        material.color.set("#ffffff");
+        material.side = THREE.FrontSide;
+        material.transparent = false;
+        material.alphaTest = 0;
+        material.needsUpdate = true;
+      }
+    });
+  }, [modelScene, shirtTexture, textureReadyRevision, wireframe]);
 
   useEffect(() => {
     const position = cameraPositions[cameraPreset];
@@ -159,57 +180,6 @@ export const ViewerScene = ({
     orbitRef.current?.target.set(0, 1.45, 0);
     orbitRef.current?.update();
   }, [camera, cameraPreset]);
-
-  const frontVisible =
-    readyRevision > 0 &&
-    artworkLayers.some((layer) => layer.visible && layer.targetRegion === "front");
-  const backVisible =
-    readyRevision > 0 &&
-    artworkLayers.some((layer) => layer.visible && layer.targetRegion === "back");
-
-  const frontRegion = layoutRegions.find((region) => region.id === "front") ?? layoutRegions[0];
-  const overlayAspect = frontRegion.height / frontRegion.width;
-  const frontWidth = modelPlacement.size.z * decalConfig.front.width * preset.shirtScale[0];
-  const frontHeight = frontWidth * overlayAspect;
-  const backWidth = modelPlacement.size.z * decalConfig.back.width * preset.shirtScale[0];
-  const backHeight = backWidth * overlayAspect;
-  const frontOverlayZ = modelPlacement.center.z + modelPlacement.size.z * decalConfig.front.zOffset;
-  const backOverlayZ = modelPlacement.center.z + modelPlacement.size.z * decalConfig.back.zOffset;
-  const frontOverlayY =
-    modelPlacement.box.min.y + modelPlacement.size.y * decalConfig.front.yOffset;
-  const backOverlayY =
-    modelPlacement.box.min.y + modelPlacement.size.y * decalConfig.back.yOffset;
-  const frontOverlayX =
-    modelPlacement.box.max.x + modelPlacement.size.x * decalConfig.front.xOffset;
-  const backOverlayX =
-    modelPlacement.box.min.x - modelPlacement.size.x * decalConfig.back.xOffset;
-
-  const frontGeometry = useMemo(
-    () =>
-      createCurvedOverlayGeometry(
-        frontWidth,
-        frontHeight,
-        modelPlacement.size.x * decalConfig.front.curve
-      ),
-    [frontHeight, frontWidth, modelPlacement.size.x]
-  );
-  const backGeometry = useMemo(
-    () =>
-      createCurvedOverlayGeometry(
-        backWidth,
-        backHeight,
-        modelPlacement.size.x * decalConfig.back.curve
-      ),
-    [backHeight, backWidth, modelPlacement.size.x]
-  );
-
-  useEffect(
-    () => () => {
-      frontGeometry.dispose();
-      backGeometry.dispose();
-    },
-    [backGeometry, frontGeometry]
-  );
 
   return (
     <>
@@ -226,46 +196,6 @@ export const ViewerScene = ({
         position={modelPlacement.position}
       >
         <primitive object={modelScene} />
-        {frontVisible && (
-          <mesh
-            geometry={frontGeometry}
-            position={[frontOverlayX, frontOverlayY, frontOverlayZ]}
-            rotation={[0, Math.PI / 2, 0]}
-            renderOrder={10}
-          >
-            <meshBasicMaterial
-              map={textures.front}
-              transparent
-              alphaTest={0.01}
-              side={THREE.FrontSide}
-              depthTest
-              depthWrite={false}
-              toneMapped={false}
-              polygonOffset
-              polygonOffsetFactor={-4}
-            />
-          </mesh>
-        )}
-        {backVisible && (
-          <mesh
-            geometry={backGeometry}
-            position={[backOverlayX, backOverlayY, backOverlayZ]}
-            rotation={[0, -Math.PI / 2, 0]}
-            renderOrder={10}
-          >
-            <meshBasicMaterial
-              map={textures.back}
-              transparent
-              alphaTest={0.01}
-              side={THREE.FrontSide}
-              depthTest
-              depthWrite={false}
-              toneMapped={false}
-              polygonOffset
-              polygonOffsetFactor={-4}
-            />
-          </mesh>
-        )}
       </group>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0.02, 0]}>

@@ -113,7 +113,7 @@ const translations: Record<UiLanguage, Record<TranslationKey, string>> = {
     "viewer.loadingModel": "Loading model",
     "viewer.liveTextureRevision": "Live texture revision",
     "viewer.placeholderNote":
-      "GLB avatar preview is active. Artwork is remapped into rough shirt UV zones with a dark-fabric mask hack, so front/back work for MVP but are not yet print-accurate.",
+      "GLB avatar preview is active. The shirt is a separate mesh, and the 2D layout now updates its material texture directly.",
     "editor.title": "2D UV Layout",
     "editor.region": "Area",
     "editor.subtitle": "Front, back, and sleeve regions",
@@ -194,7 +194,7 @@ const translations: Record<UiLanguage, Record<TranslationKey, string>> = {
     "viewer.loadingModel": "Загрузка модели",
     "viewer.liveTextureRevision": "Версия live-текстуры",
     "viewer.placeholderNote":
-      "Сейчас активен GLB-аватар. Дизайн грубо перекладывается в UV-зоны футболки через маску темной ткани, поэтому front/back уже работают для MVP, но еще не дают полиграфической точности.",
+      "Сейчас активен GLB-аватар. Футболка вынесена в отдельный меш, и 2D-макет теперь напрямую обновляет ее текстуру.",
     "editor.title": "2D UV-макет",
     "editor.region": "Область",
     "editor.subtitle": "Перед, спина и зоны рукавов",
