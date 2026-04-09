@@ -113,7 +113,7 @@ const translations: Record<UiLanguage, Record<TranslationKey, string>> = {
     "viewer.loadingModel": "Loading model",
     "viewer.liveTextureRevision": "Live texture revision",
     "viewer.placeholderNote":
-      "GLB avatar preview is active. The shirt is a separate mesh, and the 2D layout now updates its material texture directly.",
+      "A standalone shirt GLB preview is active. The 2D layout now updates the shirt material directly for a simpler MVP workflow.",
     "editor.title": "2D UV Layout",
     "editor.region": "Area",
     "editor.subtitle": "Front, back, and sleeve regions",
@@ -194,7 +194,7 @@ const translations: Record<UiLanguage, Record<TranslationKey, string>> = {
     "viewer.loadingModel": "Загрузка модели",
     "viewer.liveTextureRevision": "Версия live-текстуры",
     "viewer.placeholderNote":
-      "Сейчас активен GLB-аватар. Футболка вынесена в отдельный меш, и 2D-макет теперь напрямую обновляет ее текстуру.",
+      "Сейчас активен standalone GLB футболки. 2D-макет теперь напрямую обновляет материал футболки для более простого MVP-сценария.",
     "editor.title": "2D UV-макет",
     "editor.region": "Область",
     "editor.subtitle": "Перед, спина и зоны рукавов",
