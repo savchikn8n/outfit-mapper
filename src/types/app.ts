@@ -52,6 +52,9 @@ export interface RegionDefinition {
   height: number;
   color: string;
   points?: ReadonlyArray<readonly [number, number]>;
+  templateSource?: string;
+  templateWidth?: number;
+  templateHeight?: number;
   editorBounds?: {
     x: number;
     y: number;

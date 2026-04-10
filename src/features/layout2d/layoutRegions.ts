@@ -19,18 +19,41 @@ const makeBounds = (points: ReadonlyArray<readonly [number, number]>) => {
   };
 };
 
+const fitRect = (
+  outer: { x: number; y: number; width: number; height: number },
+  innerWidth: number,
+  innerHeight: number
+) => {
+  const scale = Math.min(outer.width / innerWidth, outer.height / innerHeight);
+  const width = Math.round(innerWidth * scale);
+  const height = Math.round(innerHeight * scale);
+  return {
+    x: Math.round(outer.x + (outer.width - width) / 2),
+    y: Math.round(outer.y + (outer.height - height) / 2),
+    width,
+    height
+  };
+};
+
 const makeRegion = (
   id: RegionDefinition["id"],
   color: string,
   points: ReadonlyArray<readonly [number, number]>,
-  editorBounds?: RegionDefinition["editorBounds"],
+  template?: { source: string; width: number; height: number },
   textureBounds?: RegionDefinition["textureBounds"]
 ): RegionDefinition => ({
   id,
   ...makeBounds(points),
   color,
   points,
-  editorBounds,
+  ...(template
+    ? {
+        templateSource: template.source,
+        templateWidth: template.width,
+        templateHeight: template.height,
+        editorBounds: fitRect(makeBounds(points), template.width, template.height)
+      }
+    : {}),
   textureBounds
 });
 
@@ -91,29 +114,29 @@ export const layoutRegions: RegionDefinition[] = [
     "front",
     "#1c2c3a",
     uvRegions.front,
-    { x: 540, y: 438, width: 220, height: 278 },
-    { x: 540, y: 470, width: 220, height: 278 }
+    { source: "/templates/front1.svg", width: 2368, height: 3267 },
+    { x: 427, y: 309, width: 443, height: 604 }
   ),
   makeRegion(
     "back",
     "#2b2439",
     uvRegions.back,
-    { x: 180, y: 430, width: 220, height: 330 },
-    { x: 180, y: 452, width: 220, height: 330 }
+    { source: "/templates/back1.svg", width: 2389, height: 3267 },
+    { x: 53, y: 309, width: 476, height: 604 }
   ),
   makeRegion(
     "leftSleeve",
     "#23352b",
     uvRegions.leftSleeve,
-    { x: 94, y: 84, width: 202, height: 146 },
-    { x: 94, y: 84, width: 202, height: 146 }
+    { source: "/templates/leftarm1.svg", width: 2368, height: 1490 },
+    { x: 58, y: 46, width: 275, height: 233 }
   ),
   makeRegion(
     "rightSleeve",
     "#363022",
     uvRegions.rightSleeve,
-    { x: 662, y: 84, width: 202, height: 146 },
-    { x: 662, y: 84, width: 202, height: 146 }
+    { source: "/templates/rightarm1.svg", width: 2389, height: 1490 },
+    { x: 543, y: 46, width: 359, height: 233 }
   )
 ];
 

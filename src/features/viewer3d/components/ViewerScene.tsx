@@ -164,9 +164,24 @@ export const ViewerScene = ({
 
         material.map = shirtTexture;
         material.color.set("#ffffff");
-        material.side = THREE.FrontSide;
+        material.side = THREE.DoubleSide;
         material.transparent = false;
         material.alphaTest = 0;
+        if ("normalMap" in material) {
+          material.normalMap = null;
+        }
+        if ("aoMap" in material) {
+          material.aoMap = null;
+        }
+        if ("roughnessMap" in material) {
+          material.roughnessMap = null;
+        }
+        if ("metalnessMap" in material) {
+          material.metalnessMap = null;
+        }
+        if ("alphaMap" in material) {
+          material.alphaMap = null;
+        }
         if ("roughness" in material) {
           material.roughness = 1;
         }
