@@ -68,12 +68,15 @@ const layerDefaultsByRegion: Record<TargetRegion, Pick<ArtworkLayer, "x" | "y" |
   Object.fromEntries(
     layoutRegions.map((region) => [
       region.id,
-      {
-        x: region.x + Math.round(region.width * 0.2),
-        y: region.y + Math.round(region.height * 0.2),
-        width: Math.round(region.width * 0.6),
-        height: Math.round(region.height * 0.4)
-      }
+      (() => {
+        const bounds = region.editorBounds ?? region;
+        return {
+          x: bounds.x + Math.round(bounds.width * 0.2),
+          y: bounds.y + Math.round(bounds.height * 0.2),
+          width: Math.round(bounds.width * 0.6),
+          height: Math.round(bounds.height * 0.6)
+        };
+      })()
     ])
   ) as Record<TargetRegion, Pick<ArtworkLayer, "x" | "y" | "width" | "height">>;
 

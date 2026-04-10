@@ -19,6 +19,21 @@ const makeBounds = (points: ReadonlyArray<readonly [number, number]>) => {
   };
 };
 
+const makeRegion = (
+  id: RegionDefinition["id"],
+  color: string,
+  points: ReadonlyArray<readonly [number, number]>,
+  editorBounds?: RegionDefinition["editorBounds"],
+  textureBounds?: RegionDefinition["textureBounds"]
+): RegionDefinition => ({
+  id,
+  ...makeBounds(points),
+  color,
+  points,
+  editorBounds,
+  textureBounds
+});
+
 const uvRegions = {
   leftSleeve: [
     [58, 46],
@@ -72,30 +87,34 @@ const uvRegions = {
 } as const;
 
 export const layoutRegions: RegionDefinition[] = [
-  {
-    id: "front",
-    ...makeBounds(uvRegions.front),
-    color: "#1c2c3a",
-    points: uvRegions.front
-  },
-  {
-    id: "back",
-    ...makeBounds(uvRegions.back),
-    color: "#2b2439",
-    points: uvRegions.back
-  },
-  {
-    id: "leftSleeve",
-    ...makeBounds(uvRegions.leftSleeve),
-    color: "#23352b",
-    points: uvRegions.leftSleeve
-  },
-  {
-    id: "rightSleeve",
-    ...makeBounds(uvRegions.rightSleeve),
-    color: "#363022",
-    points: uvRegions.rightSleeve
-  }
+  makeRegion(
+    "front",
+    "#1c2c3a",
+    uvRegions.front,
+    { x: 540, y: 438, width: 220, height: 278 },
+    { x: 540, y: 470, width: 220, height: 278 }
+  ),
+  makeRegion(
+    "back",
+    "#2b2439",
+    uvRegions.back,
+    { x: 180, y: 430, width: 220, height: 330 },
+    { x: 180, y: 452, width: 220, height: 330 }
+  ),
+  makeRegion(
+    "leftSleeve",
+    "#23352b",
+    uvRegions.leftSleeve,
+    { x: 94, y: 84, width: 202, height: 146 },
+    { x: 94, y: 84, width: 202, height: 146 }
+  ),
+  makeRegion(
+    "rightSleeve",
+    "#363022",
+    uvRegions.rightSleeve,
+    { x: 662, y: 84, width: 202, height: 146 },
+    { x: 662, y: 84, width: 202, height: 146 }
+  )
 ];
 
 const shirtPath = (width: number, height: number) =>

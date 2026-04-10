@@ -52,6 +52,18 @@ export interface RegionDefinition {
   height: number;
   color: string;
   points?: ReadonlyArray<readonly [number, number]>;
+  editorBounds?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  textureBounds?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   texturePoints?: ReadonlyArray<readonly [number, number]>;
   textureFlipY?: boolean;
   textureFlipX?: boolean;

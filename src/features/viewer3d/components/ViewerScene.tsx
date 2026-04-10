@@ -164,9 +164,15 @@ export const ViewerScene = ({
 
         material.map = shirtTexture;
         material.color.set("#ffffff");
-        material.side = THREE.DoubleSide;
+        material.side = THREE.FrontSide;
         material.transparent = false;
         material.alphaTest = 0;
+        if ("roughness" in material) {
+          material.roughness = 1;
+        }
+        if ("metalness" in material) {
+          material.metalness = 0;
+        }
         material.needsUpdate = true;
       }
     });

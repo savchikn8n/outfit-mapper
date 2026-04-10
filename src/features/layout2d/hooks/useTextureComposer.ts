@@ -53,19 +53,6 @@ export const useTextureComposer = (
       const scaleX = canvas.width / LAYOUT_WIDTH;
       const scaleY = canvas.height / LAYOUT_HEIGHT;
 
-      for (const region of layoutRegions) {
-        const textureRegion = region.texturePoints
-          ? { ...region, points: region.texturePoints }
-          : region;
-        context.save();
-        context.scale(scaleX, scaleY);
-        context.fillStyle = region.color;
-        context.globalAlpha = 0.12;
-        traceRegionShape(context, textureRegion);
-        context.fill();
-        context.restore();
-      }
-
       const visibleLayers = [...artworkLayers]
         .filter((layer) => layer.visible)
         .sort((left, right) => left.zIndex - right.zIndex);
@@ -98,19 +85,21 @@ export const useTextureComposer = (
                 })()
               }
             : region;
+          const editorBounds = region.editorBounds ?? region;
+          const textureBounds = region.textureBounds ?? textureRegion;
 
-          const localX = (layer.x - region.x) / region.width;
-          const localY = (layer.y - region.y) / region.height;
-          const localWidth = layer.width / region.width;
-          const localHeight = layer.height / region.height;
+          const localX = (layer.x - editorBounds.x) / editorBounds.width;
+          const localY = (layer.y - editorBounds.y) / editorBounds.height;
+          const localWidth = layer.width / editorBounds.width;
+          const localHeight = layer.height / editorBounds.height;
           const drawX =
-            textureRegion.x +
-            (region.textureFlipX ? 1 - localX - localWidth : localX) * textureRegion.width;
+            textureBounds.x +
+            (region.textureFlipX ? 1 - localX - localWidth : localX) * textureBounds.width;
           const drawY =
-            textureRegion.y +
-            (region.textureFlipY ? 1 - localY - localHeight : localY) * textureRegion.height;
-          const drawWidth = localWidth * textureRegion.width;
-          const drawHeight = localHeight * textureRegion.height;
+            textureBounds.y +
+            (region.textureFlipY ? 1 - localY - localHeight : localY) * textureBounds.height;
+          const drawWidth = localWidth * textureBounds.width;
+          const drawHeight = localHeight * textureBounds.height;
 
           context.save();
           context.scale(scaleX, scaleY);
