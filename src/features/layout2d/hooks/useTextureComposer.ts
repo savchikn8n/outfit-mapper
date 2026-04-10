@@ -50,11 +50,10 @@ export const useTextureComposer = (
 
       for (const region of layoutRegions) {
         context.save();
-        context.translate(region.x * scaleX, region.y * scaleY);
         context.scale(scaleX, scaleY);
         context.fillStyle = region.color;
         context.globalAlpha = 0.12;
-        traceRegionShape(context, { ...region, x: 0, y: 0 });
+        traceRegionShape(context, region);
         context.fill();
         context.restore();
       }
@@ -76,12 +75,10 @@ export const useTextureComposer = (
           }
 
           context.save();
-          context.translate(region.x * scaleX, region.y * scaleY);
           context.scale(scaleX, scaleY);
-          traceRegionShape(context, { ...region, x: 0, y: 0 });
+          traceRegionShape(context, region);
           context.clip();
           context.scale(1 / scaleX, 1 / scaleY);
-          context.translate(-region.x * scaleX, -region.y * scaleY);
           context.globalAlpha = layer.opacity;
           context.translate(layer.x * scaleX + (layer.width * scaleX) / 2, layer.y * scaleY + (layer.height * scaleY) / 2);
           context.rotate((layer.rotation * Math.PI) / 180);
