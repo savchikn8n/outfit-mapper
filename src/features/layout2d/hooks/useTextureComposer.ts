@@ -49,11 +49,14 @@ export const useTextureComposer = (
       const scaleY = canvas.height / 900;
 
       for (const region of layoutRegions) {
+        const textureRegion = region.texturePoints
+          ? { ...region, points: region.texturePoints }
+          : region;
         context.save();
         context.scale(scaleX, scaleY);
         context.fillStyle = region.color;
         context.globalAlpha = 0.12;
-        traceRegionShape(context, region);
+        traceRegionShape(context, textureRegion);
         context.fill();
         context.restore();
       }
@@ -74,20 +77,53 @@ export const useTextureComposer = (
             continue;
           }
 
+          const textureRegion = region.texturePoints
+            ? {
+                ...region,
+                points: region.texturePoints,
+                ...(() => {
+                  const xs = region.texturePoints.map(([x]) => x);
+                  const ys = region.texturePoints.map(([, y]) => y);
+                  return {
+                    x: Math.min(...xs),
+                    y: Math.min(...ys),
+                    width: Math.max(...xs) - Math.min(...xs),
+                    height: Math.max(...ys) - Math.min(...ys)
+                  };
+                })()
+              }
+            : region;
+
+          const localX = (layer.x - region.x) / region.width;
+          const localY = (layer.y - region.y) / region.height;
+          const localWidth = layer.width / region.width;
+          const localHeight = layer.height / region.height;
+          const drawX =
+            textureRegion.x +
+            (region.textureFlipX ? 1 - localX - localWidth : localX) * textureRegion.width;
+          const drawY =
+            textureRegion.y +
+            (region.textureFlipY ? 1 - localY - localHeight : localY) * textureRegion.height;
+          const drawWidth = localWidth * textureRegion.width;
+          const drawHeight = localHeight * textureRegion.height;
+
           context.save();
           context.scale(scaleX, scaleY);
-          traceRegionShape(context, region);
+          traceRegionShape(context, textureRegion);
           context.clip();
           context.scale(1 / scaleX, 1 / scaleY);
           context.globalAlpha = layer.opacity;
-          context.translate(layer.x * scaleX + (layer.width * scaleX) / 2, layer.y * scaleY + (layer.height * scaleY) / 2);
+          context.translate(
+            drawX * scaleX + (drawWidth * scaleX) / 2,
+            drawY * scaleY + (drawHeight * scaleY) / 2
+          );
           context.rotate((layer.rotation * Math.PI) / 180);
           context.drawImage(
             image,
-            -(layer.width * scaleX) / 2,
-            -(layer.height * scaleY) / 2,
-            layer.width * scaleX,
-            layer.height * scaleY
+            -(drawWidth * scaleX) / 2,
+            -(drawHeight * scaleY) / 2,
+            drawWidth * scaleX,
+            drawHeight * scaleY
           );
           context.restore();
         } catch {

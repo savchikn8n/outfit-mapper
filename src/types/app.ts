@@ -52,6 +52,9 @@ export interface RegionDefinition {
   height: number;
   color: string;
   points?: ReadonlyArray<readonly [number, number]>;
+  texturePoints?: ReadonlyArray<readonly [number, number]>;
+  textureFlipY?: boolean;
+  textureFlipX?: boolean;
 }
 
 export interface AvatarPreset {
