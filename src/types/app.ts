@@ -51,6 +51,7 @@ export interface RegionDefinition {
   width: number;
   height: number;
   color: string;
+  points?: ReadonlyArray<readonly [number, number]>;
 }
 
 export interface AvatarPreset {

@@ -11,6 +11,7 @@ import {
 } from "../types/app";
 import { createId } from "../utils/id";
 import { defaultSceneSettings } from "../features/projects/normalizeProject";
+import { layoutRegions } from "../features/layout2d/layoutRegions";
 
 interface ProjectStore {
   project: ProjectData;
@@ -63,12 +64,18 @@ const touch = (project: ProjectData): ProjectData => ({
   updatedAt: new Date().toISOString()
 });
 
-const layerDefaultsByRegion: Record<TargetRegion, Pick<ArtworkLayer, "x" | "y" | "width" | "height">> = {
-  front: { x: 150, y: 190, width: 220, height: 260 },
-  back: { x: 560, y: 190, width: 220, height: 260 },
-  leftSleeve: { x: 90, y: 590, width: 120, height: 120 },
-  rightSleeve: { x: 470, y: 590, width: 120, height: 120 }
-};
+const layerDefaultsByRegion: Record<TargetRegion, Pick<ArtworkLayer, "x" | "y" | "width" | "height">> =
+  Object.fromEntries(
+    layoutRegions.map((region) => [
+      region.id,
+      {
+        x: region.x + Math.round(region.width * 0.2),
+        y: region.y + Math.round(region.height * 0.2),
+        width: Math.round(region.width * 0.6),
+        height: Math.round(region.height * 0.4)
+      }
+    ])
+  ) as Record<TargetRegion, Pick<ArtworkLayer, "x" | "y" | "width" | "height">>;
 
 const centeredLayerPositionByRegion = (
   region: TargetRegion,

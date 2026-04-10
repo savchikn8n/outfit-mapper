@@ -1,40 +1,93 @@
 import { RegionDefinition } from "../../types/app";
 
 export const LAYOUT_WIDTH = 960;
-export const LAYOUT_HEIGHT = 900;
+export const LAYOUT_HEIGHT = 960;
+
+const makeBounds = (points: ReadonlyArray<readonly [number, number]>) => {
+  const xs = points.map(([x]) => x);
+  const ys = points.map(([, y]) => y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY
+  };
+};
+
+const uvRegions = {
+  back: [
+    [28, 300],
+    [181, 300],
+    [201, 282],
+    [247, 282],
+    [268, 300],
+    [386, 300],
+    [357, 668],
+    [263, 668],
+    [248, 621],
+    [196, 598],
+    [149, 621],
+    [141, 668],
+    [42, 668]
+  ],
+  front: [
+    [573, 300],
+    [691, 300],
+    [712, 282],
+    [757, 282],
+    [779, 300],
+    [932, 300],
+    [919, 668],
+    [823, 668],
+    [815, 621],
+    [768, 598],
+    [720, 619],
+    [704, 668],
+    [603, 668]
+  ],
+  leftSleeve: [
+    [173, 721],
+    [385, 721],
+    [372, 933],
+    [186, 933]
+  ],
+  rightSleeve: [
+    [585, 721],
+    [797, 721],
+    [784, 933],
+    [598, 933]
+  ]
+} as const;
 
 export const layoutRegions: RegionDefinition[] = [
   {
     id: "front",
-    x: 90,
-    y: 64,
-    width: 340,
-    height: 510,
-    color: "#1c2c3a"
+    ...makeBounds(uvRegions.front),
+    color: "#1c2c3a",
+    points: uvRegions.front
   },
   {
     id: "back",
-    x: 500,
-    y: 64,
-    width: 340,
-    height: 510,
-    color: "#2b2439"
+    ...makeBounds(uvRegions.back),
+    color: "#2b2439",
+    points: uvRegions.back
   },
   {
     id: "leftSleeve",
-    x: 60,
-    y: 560,
-    width: 220,
-    height: 180,
-    color: "#23352b"
+    ...makeBounds(uvRegions.leftSleeve),
+    color: "#23352b",
+    points: uvRegions.leftSleeve
   },
   {
     id: "rightSleeve",
-    x: 420,
-    y: 560,
-    width: 220,
-    height: 180,
-    color: "#363022"
+    ...makeBounds(uvRegions.rightSleeve),
+    color: "#363022",
+    points: uvRegions.rightSleeve
   }
 ];
 
@@ -63,9 +116,15 @@ const sleevePath = (width: number, height: number) =>
   ].join(" ");
 
 export const getRegionShapePath = (region: RegionDefinition) =>
-  region.id === "front" || region.id === "back"
-    ? shirtPath(region.width, region.height)
-    : sleevePath(region.width, region.height);
+  region.points
+    ? [
+        `M ${region.points[0][0]} ${region.points[0][1]}`,
+        ...region.points.slice(1).map(([x, y]) => `L ${x} ${y}`),
+        "Z"
+      ].join(" ")
+    : region.id === "front" || region.id === "back"
+      ? shirtPath(region.width, region.height)
+      : sleevePath(region.width, region.height);
 
 export const traceRegionShape = (
   context: CanvasRenderingContext2D,
@@ -79,7 +138,13 @@ export const traceRegionShape = (
 
   context.beginPath();
 
-  if (region.id === "front" || region.id === "back") {
+  if (region.points) {
+    const [first, ...rest] = region.points;
+    context.moveTo(first[0] + offsetX, first[1] + offsetY);
+    rest.forEach(([pointX, pointY]) => {
+      context.lineTo(pointX + offsetX, pointY + offsetY);
+    });
+  } else if (region.id === "front" || region.id === "back") {
     context.moveTo(x + width * 0.22, y + height * 0.08);
     context.quadraticCurveTo(x + width * 0.5, y - height * 0.02, x + width * 0.78, y + height * 0.08);
     context.lineTo(x + width * 0.98, y + height * 0.2);
