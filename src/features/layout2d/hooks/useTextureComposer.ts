@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { layoutRegions, traceRegionShape } from "../layoutRegions";
+import {
+  layoutRegions,
+  LAYOUT_HEIGHT,
+  LAYOUT_WIDTH,
+  traceRegionShape
+} from "../layoutRegions";
 import { ArtworkLayer } from "../../../types/app";
 import { loadImageElement } from "../../../utils/image";
 
@@ -45,8 +50,8 @@ export const useTextureComposer = (
       context.fillStyle = shirtBaseColor;
       context.fillRect(0, 0, canvas.width, canvas.height);
 
-      const scaleX = canvas.width / 960;
-      const scaleY = canvas.height / 900;
+      const scaleX = canvas.width / LAYOUT_WIDTH;
+      const scaleY = canvas.height / LAYOUT_HEIGHT;
 
       for (const region of layoutRegions) {
         const textureRegion = region.texturePoints

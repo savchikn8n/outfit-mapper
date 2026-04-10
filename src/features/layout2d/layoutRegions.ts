@@ -19,91 +19,82 @@ const makeBounds = (points: ReadonlyArray<readonly [number, number]>) => {
   };
 };
 
-const flipPointsY = (points: ReadonlyArray<readonly [number, number]>) => {
-  const bounds = makeBounds(points);
-  return points.map(([x, y]) => [x, bounds.y + bounds.height - (y - bounds.y)] as const);
-};
-
 const uvRegions = {
-  back: [
-    [28, 300],
-    [181, 300],
-    [201, 282],
-    [247, 282],
-    [268, 300],
-    [386, 300],
-    [357, 668],
-    [263, 668],
-    [248, 621],
-    [196, 598],
-    [149, 621],
-    [141, 668],
-    [42, 668]
-  ],
-  front: [
-    [573, 300],
-    [691, 300],
-    [712, 282],
-    [757, 282],
-    [779, 300],
-    [932, 300],
-    [919, 668],
-    [823, 668],
-    [815, 621],
-    [768, 598],
-    [720, 619],
-    [704, 668],
-    [603, 668]
-  ],
   leftSleeve: [
-    [173, 721],
-    [385, 721],
-    [372, 933],
-    [186, 933]
+    [58, 46],
+    [153, 46],
+    [192, 58],
+    [257, 105],
+    [333, 225],
+    [333, 279],
+    [58, 279],
+    [58, 223]
   ],
   rightSleeve: [
-    [585, 721],
-    [797, 721],
-    [784, 933],
-    [598, 933]
+    [543, 46],
+    [638, 46],
+    [703, 58],
+    [780, 105],
+    [902, 225],
+    [902, 279],
+    [628, 279],
+    [628, 223]
+  ],
+  back: [
+    [53, 395],
+    [91, 338],
+    [130, 310],
+    [229, 310],
+    [287, 340],
+    [335, 338],
+    [400, 310],
+    [446, 310],
+    [487, 339],
+    [529, 395],
+    [529, 913],
+    [55, 913]
+  ],
+  front: [
+    [427, 395],
+    [469, 339],
+    [511, 309],
+    [575, 309],
+    [613, 335],
+    [649, 357],
+    [685, 335],
+    [726, 309],
+    [788, 309],
+    [832, 338],
+    [870, 394],
+    [870, 913],
+    [428, 913]
   ]
 } as const;
-
-const displayFront = flipPointsY(uvRegions.front);
-const displayBack = flipPointsY(uvRegions.back);
-const displayLeftSleeve = uvRegions.leftSleeve;
-const displayRightSleeve = uvRegions.rightSleeve;
 
 export const layoutRegions: RegionDefinition[] = [
   {
     id: "front",
-    ...makeBounds(displayFront),
+    ...makeBounds(uvRegions.front),
     color: "#1c2c3a",
-    points: displayFront,
-    texturePoints: uvRegions.front,
-    textureFlipY: true
+    points: uvRegions.front
   },
   {
     id: "back",
-    ...makeBounds(displayBack),
+    ...makeBounds(uvRegions.back),
     color: "#2b2439",
-    points: displayBack,
-    texturePoints: uvRegions.back,
-    textureFlipY: true
+    points: uvRegions.back
   },
   {
     id: "leftSleeve",
-    ...makeBounds(displayLeftSleeve),
+    ...makeBounds(uvRegions.leftSleeve),
     color: "#23352b",
-    points: displayLeftSleeve,
-    texturePoints: uvRegions.leftSleeve
+    points: uvRegions.leftSleeve
   },
   {
     id: "rightSleeve",
-    ...makeBounds(displayRightSleeve),
+    ...makeBounds(uvRegions.rightSleeve),
     color: "#363022",
-    points: displayRightSleeve,
-    texturePoints: uvRegions.rightSleeve
+    points: uvRegions.rightSleeve
   }
 ];
 
