@@ -61,6 +61,12 @@ export interface RegionDefinition {
     width: number;
     height: number;
   };
+  placementBounds?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   textureBounds?: {
     x: number;
     y: number;
@@ -70,6 +76,12 @@ export interface RegionDefinition {
   texturePoints?: ReadonlyArray<readonly [number, number]>;
   textureFlipY?: boolean;
   textureFlipX?: boolean;
+  textureCalibration?: {
+    offsetX?: number;
+    offsetY?: number;
+    scaleX?: number;
+    scaleY?: number;
+  };
 }
 
 export interface AvatarPreset {

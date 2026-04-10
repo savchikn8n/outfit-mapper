@@ -165,6 +165,7 @@ export const ViewerScene = ({
         material.map = shirtTexture;
         material.color.set("#ffffff");
         material.side = THREE.DoubleSide;
+        material.shadowSide = THREE.DoubleSide;
         material.transparent = false;
         material.alphaTest = 0;
         if ("normalMap" in material) {
@@ -187,6 +188,9 @@ export const ViewerScene = ({
         }
         if ("metalness" in material) {
           material.metalness = 0;
+        }
+        if ("envMapIntensity" in material) {
+          material.envMapIntensity = 0;
         }
         material.needsUpdate = true;
       }

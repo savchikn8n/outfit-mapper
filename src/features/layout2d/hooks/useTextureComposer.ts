@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   layoutRegions,
   LAYOUT_HEIGHT,
-  LAYOUT_WIDTH,
-  traceRegionShape
+  LAYOUT_WIDTH
 } from "../layoutRegions";
 import { ArtworkLayer } from "../../../types/app";
 import { loadImageElement } from "../../../utils/image";
@@ -21,6 +20,13 @@ const getCachedImage = (source: string) => {
   const request = loadImageElement(source);
   imageCache.set(source, request);
   return request;
+};
+
+const makeCanvas = (width: number, height: number) => {
+  const element = document.createElement("canvas");
+  element.width = Math.max(1, width);
+  element.height = Math.max(1, height);
+  return element;
 };
 
 export const useTextureComposer = (
@@ -57,71 +63,106 @@ export const useTextureComposer = (
         .filter((layer) => layer.visible)
         .sort((left, right) => left.zIndex - right.zIndex);
 
-      for (const layer of visibleLayers) {
+      for (const region of layoutRegions) {
+        const layersForRegion = visibleLayers.filter((layer) => layer.targetRegion === region.id);
+        if (layersForRegion.length === 0) {
+          continue;
+        }
+
+        const textureRegion = region.texturePoints
+          ? {
+              ...region,
+              points: region.texturePoints,
+              ...(() => {
+                const xs = region.texturePoints.map(([x]) => x);
+                const ys = region.texturePoints.map(([, y]) => y);
+                return {
+                  x: Math.min(...xs),
+                  y: Math.min(...ys),
+                  width: Math.max(...xs) - Math.min(...xs),
+                  height: Math.max(...ys) - Math.min(...ys)
+                };
+              })()
+            }
+          : region;
+        const editorBounds = region.editorBounds ?? region;
+        const textureBounds = region.textureBounds ?? textureRegion;
+        const calibration = {
+          offsetX: region.textureCalibration?.offsetX ?? 0,
+          offsetY: region.textureCalibration?.offsetY ?? 0,
+          scaleX: region.textureCalibration?.scaleX ?? 1,
+          scaleY: region.textureCalibration?.scaleY ?? 1
+        };
+        const regionCanvas = makeCanvas(
+          Math.round(textureBounds.width * scaleX),
+          Math.round(textureBounds.height * scaleY)
+        );
+        const regionContext = regionCanvas.getContext("2d");
+        if (!regionContext) {
+          continue;
+        }
+
+        regionContext.clearRect(0, 0, regionCanvas.width, regionCanvas.height);
+
+        for (const layer of layersForRegion) {
+          try {
+            const image = await getCachedImage(layer.source);
+            if (cancelled) {
+              return;
+            }
+
+            const localX = (layer.x - editorBounds.x) / editorBounds.width;
+            const localY = (layer.y - editorBounds.y) / editorBounds.height;
+            const localWidth = layer.width / editorBounds.width;
+            const localHeight = layer.height / editorBounds.height;
+            const baseWidth = localWidth * regionCanvas.width;
+            const baseHeight = localHeight * regionCanvas.height;
+            const drawWidth = baseWidth * calibration.scaleX;
+            const drawHeight = baseHeight * calibration.scaleY;
+            const centerX =
+              ((region.textureFlipX ? 1 - localX - localWidth / 2 : localX + localWidth / 2) +
+                calibration.offsetX) *
+              regionCanvas.width;
+            const centerY =
+              ((region.textureFlipY ? 1 - localY - localHeight / 2 : localY + localHeight / 2) +
+                calibration.offsetY) *
+              regionCanvas.height;
+
+            regionContext.save();
+            regionContext.globalAlpha = layer.opacity;
+            regionContext.translate(centerX, centerY);
+            regionContext.rotate((layer.rotation * Math.PI) / 180);
+            regionContext.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+            regionContext.restore();
+          } catch {
+            // Ignore failed artwork loads so the editor remains responsive.
+          }
+        }
+
         try {
-          const image = await getCachedImage(layer.source);
+          const templateImage = region.templateSource
+            ? await getCachedImage(region.templateSource)
+            : null;
           if (cancelled) {
             return;
           }
 
-          const region = layoutRegions.find((entry) => entry.id === layer.targetRegion);
-          if (!region) {
-            continue;
+          if (templateImage) {
+            regionContext.save();
+            regionContext.globalCompositeOperation = "destination-in";
+            regionContext.drawImage(templateImage, 0, 0, regionCanvas.width, regionCanvas.height);
+            regionContext.restore();
           }
 
-          const textureRegion = region.texturePoints
-            ? {
-                ...region,
-                points: region.texturePoints,
-                ...(() => {
-                  const xs = region.texturePoints.map(([x]) => x);
-                  const ys = region.texturePoints.map(([, y]) => y);
-                  return {
-                    x: Math.min(...xs),
-                    y: Math.min(...ys),
-                    width: Math.max(...xs) - Math.min(...xs),
-                    height: Math.max(...ys) - Math.min(...ys)
-                  };
-                })()
-              }
-            : region;
-          const editorBounds = region.editorBounds ?? region;
-          const textureBounds = region.textureBounds ?? textureRegion;
-
-          const localX = (layer.x - editorBounds.x) / editorBounds.width;
-          const localY = (layer.y - editorBounds.y) / editorBounds.height;
-          const localWidth = layer.width / editorBounds.width;
-          const localHeight = layer.height / editorBounds.height;
-          const drawX =
-            textureBounds.x +
-            (region.textureFlipX ? 1 - localX - localWidth : localX) * textureBounds.width;
-          const drawY =
-            textureBounds.y +
-            (region.textureFlipY ? 1 - localY - localHeight : localY) * textureBounds.height;
-          const drawWidth = localWidth * textureBounds.width;
-          const drawHeight = localHeight * textureBounds.height;
-
-          context.save();
-          context.scale(scaleX, scaleY);
-          traceRegionShape(context, textureRegion);
-          context.clip();
-          context.scale(1 / scaleX, 1 / scaleY);
-          context.globalAlpha = layer.opacity;
-          context.translate(
-            drawX * scaleX + (drawWidth * scaleX) / 2,
-            drawY * scaleY + (drawHeight * scaleY) / 2
-          );
-          context.rotate((layer.rotation * Math.PI) / 180);
           context.drawImage(
-            image,
-            -(drawWidth * scaleX) / 2,
-            -(drawHeight * scaleY) / 2,
-            drawWidth * scaleX,
-            drawHeight * scaleY
+            regionCanvas,
+            textureBounds.x * scaleX,
+            textureBounds.y * scaleY,
+            regionCanvas.width,
+            regionCanvas.height
           );
-          context.restore();
         } catch {
-          // Ignore failed artwork loads so the editor remains responsive.
+          // Ignore failed template loads so the editor remains responsive.
         }
       }
 

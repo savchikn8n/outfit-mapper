@@ -35,26 +35,54 @@ const fitRect = (
   };
 };
 
+const insetRect = (
+  rect: { x: number; y: number; width: number; height: number },
+  factors: { left?: number; top?: number; right?: number; bottom?: number }
+) => {
+  const left = factors.left ?? 0;
+  const top = factors.top ?? 0;
+  const right = factors.right ?? 0;
+  const bottom = factors.bottom ?? 0;
+
+  return {
+    x: Math.round(rect.x + rect.width * left),
+    y: Math.round(rect.y + rect.height * top),
+    width: Math.round(rect.width * (1 - left - right)),
+    height: Math.round(rect.height * (1 - top - bottom))
+  };
+};
+
 const makeRegion = (
   id: RegionDefinition["id"],
   color: string,
   points: ReadonlyArray<readonly [number, number]>,
   template?: { source: string; width: number; height: number },
-  textureBounds?: RegionDefinition["textureBounds"]
+  textureBounds?: RegionDefinition["textureBounds"],
+  placementBounds?: RegionDefinition["placementBounds"],
+  textureCalibration?: RegionDefinition["textureCalibration"]
 ): RegionDefinition => ({
+  ...(() => {
+    const bounds = makeBounds(points);
+    const editorBounds = template ? fitRect(bounds, template.width, template.height) : undefined;
+
+    return {
+      ...bounds,
+      ...(editorBounds ? { editorBounds } : {}),
+      ...(placementBounds ? { placementBounds } : editorBounds ? { placementBounds: editorBounds } : {})
+    };
+  })(),
   id,
-  ...makeBounds(points),
   color,
   points,
   ...(template
     ? {
         templateSource: template.source,
         templateWidth: template.width,
-        templateHeight: template.height,
-        editorBounds: fitRect(makeBounds(points), template.width, template.height)
+        templateHeight: template.height
       }
     : {}),
-  textureBounds
+  ...(textureBounds ? { textureBounds } : {}),
+  ...(textureCalibration ? { textureCalibration } : {})
 });
 
 const uvRegions = {
@@ -110,34 +138,62 @@ const uvRegions = {
 } as const;
 
 export const layoutRegions: RegionDefinition[] = [
-  makeRegion(
-    "front",
-    "#1c2c3a",
-    uvRegions.front,
-    { source: "/templates/front1.svg", width: 2368, height: 3267 },
-    { x: 427, y: 309, width: 443, height: 604 }
-  ),
-  makeRegion(
-    "back",
-    "#2b2439",
-    uvRegions.back,
-    { source: "/templates/back1.svg", width: 2389, height: 3267 },
-    { x: 53, y: 309, width: 476, height: 604 }
-  ),
-  makeRegion(
-    "leftSleeve",
-    "#23352b",
-    uvRegions.leftSleeve,
-    { source: "/templates/leftarm1.svg", width: 2368, height: 1490 },
-    { x: 58, y: 46, width: 275, height: 233 }
-  ),
-  makeRegion(
-    "rightSleeve",
-    "#363022",
-    uvRegions.rightSleeve,
-    { source: "/templates/rightarm1.svg", width: 2389, height: 1490 },
-    { x: 543, y: 46, width: 359, height: 233 }
-  )
+  (() => {
+    const points = uvRegions.front;
+    const bounds = makeBounds(points);
+    const editorBounds = fitRect(bounds, 2368, 3267);
+    return makeRegion(
+      "front",
+      "#1c2c3a",
+      points,
+      { source: "/templates/front1.svg", width: 2368, height: 3267 },
+      { x: 427, y: 309, width: 443, height: 604 },
+      insetRect(editorBounds, { left: 0.18, top: 0.18, right: 0.18, bottom: 0.22 }),
+      { offsetX: 0.024, offsetY: 0.038, scaleX: 1.02, scaleY: 0.985 }
+    );
+  })(),
+  (() => {
+    const points = uvRegions.back;
+    const bounds = makeBounds(points);
+    const editorBounds = fitRect(bounds, 2389, 3267);
+    return makeRegion(
+      "back",
+      "#2b2439",
+      points,
+      { source: "/templates/back1.svg", width: 2389, height: 3267 },
+      { x: 53, y: 309, width: 476, height: 604 },
+      insetRect(editorBounds, { left: 0.17, top: 0.18, right: 0.17, bottom: 0.18 }),
+      { offsetX: 0.012, offsetY: 0.022, scaleX: 1.015, scaleY: 0.99 }
+    );
+  })(),
+  (() => {
+    const points = uvRegions.leftSleeve;
+    const bounds = makeBounds(points);
+    const editorBounds = fitRect(bounds, 2368, 1490);
+    return makeRegion(
+      "leftSleeve",
+      "#23352b",
+      points,
+      { source: "/templates/leftarm1.svg", width: 2368, height: 1490 },
+      { x: 58, y: 46, width: 275, height: 233 },
+      insetRect(editorBounds, { left: 0.14, top: 0.16, right: 0.14, bottom: 0.2 }),
+      { scaleX: 1, scaleY: 1 }
+    );
+  })(),
+  (() => {
+    const points = uvRegions.rightSleeve;
+    const bounds = makeBounds(points);
+    const editorBounds = fitRect(bounds, 2389, 1490);
+    return makeRegion(
+      "rightSleeve",
+      "#363022",
+      points,
+      { source: "/templates/rightarm1.svg", width: 2389, height: 1490 },
+      { x: 543, y: 46, width: 359, height: 233 },
+      insetRect(editorBounds, { left: 0.14, top: 0.16, right: 0.14, bottom: 0.2 }),
+      { scaleX: 1, scaleY: 1 }
+    );
+  })()
 ];
 
 const shirtPath = (width: number, height: number) =>

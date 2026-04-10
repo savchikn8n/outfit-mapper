@@ -8,6 +8,7 @@ interface RegionTemplateProps {
 
 export const RegionTemplate = ({ region }: RegionTemplateProps) => {
   const image = useKonvaImage(region.templateSource ?? "");
+  const templateBounds = region.editorBounds ?? region;
 
   if (!region.points) {
     return null;
@@ -15,13 +16,13 @@ export const RegionTemplate = ({ region }: RegionTemplateProps) => {
 
   return (
     <Group>
-      {image && region.editorBounds ? (
+      {image ? (
         <KonvaImage
           image={image}
-          x={region.editorBounds.x}
-          y={region.editorBounds.y}
-          width={region.editorBounds.width}
-          height={region.editorBounds.height}
+          x={templateBounds.x}
+          y={templateBounds.y}
+          width={templateBounds.width}
+          height={templateBounds.height}
           listening={false}
         />
       ) : null}
@@ -33,6 +34,26 @@ export const RegionTemplate = ({ region }: RegionTemplateProps) => {
         stroke="#c7d4e8"
         strokeWidth={2}
       />
+      {region.placementBounds ? (
+        <Line
+          points={[
+            region.placementBounds.x,
+            region.placementBounds.y,
+            region.placementBounds.x + region.placementBounds.width,
+            region.placementBounds.y,
+            region.placementBounds.x + region.placementBounds.width,
+            region.placementBounds.y + region.placementBounds.height,
+            region.placementBounds.x,
+            region.placementBounds.y + region.placementBounds.height
+          ]}
+          closed
+          stroke="#7bc2ff"
+          strokeWidth={2}
+          dash={[12, 8]}
+          opacity={0.7}
+          listening={false}
+        />
+      ) : null}
     </Group>
   );
 };
